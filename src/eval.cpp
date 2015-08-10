@@ -41,7 +41,7 @@ std::vector<int> ordered(std::vector<float>* values) {
     std::vector<int> indices(values->size());
     for (int i = 0; i != indices.size(); ++i) indices[i] = i;
     CompareIndicesByAnotherVectorValues<float> comp(values);
-    std::sort(std::begin(indices), std::end(indices), comp);
+    std::sort(indices.begin(), indices.end(), comp);
     return indices;
 }
 
