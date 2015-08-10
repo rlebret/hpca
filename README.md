@@ -30,10 +30,13 @@ See the [EACL 2014 paper](http://lebret.ch/wp-content/uploads/2014/03/eacl2014.p
 
 This package includes 6 different tools:
 
-1. Corpus preprocessing: lowercase conversion and/or all numbers replaced with a special token ('0').
+### Corpus preprocessing 
 
-The corpus needs to be a plain text file containing only the sentences of the corpus.
-This plain text file must be clean and tokenized.
+Lowercase conversion and/or all numbers replaced with a special token ('0').
+
+
+The corpus needs to be a **tokenized** plain text file containing only the **sentences** of the corpus.
+
 Before running the `preprocess` tool, authors strongly recommend to follow these two steps:
 1.  Running a sentence detector, e.g. [the Apache OpenNLP Sentence Dectector](https://opennlp.apache.org/documentation/1.5.3/manual/opennlp.html#tools.sentdetect).
 ```
@@ -43,6 +46,15 @@ Before running the `preprocess` tool, authors strongly recommend to follow these
 ```
 java -cp stanford-parser.jar edu.stanford.nlp.process.PTBTokenizer -preserveLines corpus-sentences.txt > corpus-token.txt
 ```
+
+`preprocess` options:
+* `-lower <int>`: Lowercased? 0 or 1 (default)
+* `-digit <int>`: Replace all digits with a special token? 0, 1 (default)
+* `-input-file <file>`: Input file to preprocess (gzip format is allowed)
+* `-output-file <file>`: Output file to save preprocessed data
+* `-gzip <int>`: Save in gzip format? 0 or 1 (default)
+* `-threads <int>`: Number of threads; default 8
+* `-verbose <int>`: Set verbosity: 0 or 1 (default)
 **Example**:
 ```
 preprocess -input-file corpus-token.txt -output-file corpus-clean.txt -lower 1 -digit 1 -verbose 1 -threads 8 -gzip 0
