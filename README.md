@@ -39,11 +39,11 @@ The corpus needs to be a **tokenized** plain text file containing only the **sen
 
 Before running the `preprocess` tool, authors strongly recommend to follow these two steps:
 
-1.  Running a sentence detector, e.g. [the Apache OpenNLP Sentence Dectector](https://opennlp.apache.org/documentation/1.5.3/manual/opennlp.html#tools.sentdetect).
+1. Running a sentence detector, e.g. [the Apache OpenNLP Sentence Dectector](https://opennlp.apache.org/documentation/1.5.3/manual/opennlp.html#tools.sentdetect).
 ```
 ./apache-opennlp-1.5.3/bin/opennlp SentenceDetector ./apache-opennlp-1.5.3/bin/en-sent.bin < corpus.txt > corpus-sentences.txt
 ```
-2.  Running a tokenizer, e.g. [the Stanford Tokenizer](http://nlp.stanford.edu/software/tokenizer.shtml).
+2. Running a tokenizer, e.g. [the Stanford Tokenizer](http://nlp.stanford.edu/software/tokenizer.shtml).
 ```
 java -cp stanford-parser.jar edu.stanford.nlp.process.PTBTokenizer -preserveLines corpus-sentences.txt > corpus-token.txt
 ```
@@ -108,6 +108,7 @@ cooccurrence -input-file corpus-clean.txt -vocab-file vocab.txt -output-dir path
 ## Performing Hellinger PCA
 
 Randomized SVD with respect to the Hellinger distance.
+The user should supply the directory where files produced by 'cooccurrence' are.
 
 Let `A` be a sparse matrix to be analyzed with `n` rows and `m` columns, and `r` be the ranks of a truncated SVD (with `r < min(n,m)`).
 Formally, the SVD of `A` is a factorization of the form `A = U S Vᵀ`.
@@ -131,6 +132,25 @@ pca -input-dir path_to_cooccurence_file -rank 300
 * `svd.U`: orthonomal matrix U
 * `svd.S`: diagonal matrix S whose entries are singular values
 * `svd.V`: orthonomal matrix V
+
+
+## Extracting word embeddings
+
+Generating word embeddings from the Hellinger PCA.
+The user should supply the directory where files produced by 'pca' are.
+
+`embeddings` options:
+* `-input-dir <dir>`: Directory where to find files from the randomized SVD
+* `-output-name <string>`: Filename for embeddings file which will be placed in <dir> (default is words.txt)
+* `-dim <int>`: Word vector dimension; default 100
+* `-eig <float>`: Eigenvalue weighting (0.0, 0.5 or 1.0); default is 0.0
+* `-norm <int>`: Are vectors normalized to unit length? 0 or 1 (default is 0)
+* `-verbose <int>`: Set verbosity: 0 or 1 (default)
+
+**Example**:
+```
+embeddings -input-dir path_to_svd_files -output-name words.txt -eig 0.0 -dim 100 -norm 0
+```
 
 ## AUTHORS 
 

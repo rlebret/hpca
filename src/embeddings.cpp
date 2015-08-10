@@ -136,7 +136,7 @@ int main(int argc, char **argv) {
         printf("\t-norm <int>\n");
         printf("\t\tAre vectors normalized to unit length? 0 or 1 (default is 0)\n");
         printf("\nExample usage:\n");
-        printf("./embeddings -input-dir path_to_cooccurence_file -rank 300\n\n");
+        printf("./embeddings -input-dir path_to_svd_files -output-name words.txt -eig 0.0 -dim 100 -norm 0\n\n");
         return 0;
     }
     

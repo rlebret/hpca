@@ -7,6 +7,7 @@
  
  * By default a release version is created. To create a debug version add the option:
    `-DCMAKE_BUILD_TYPE=Debug`
+
    To go back to a release version:
    `-DCMAKE_BUILD_TYPE=Release`
    
@@ -18,19 +19,19 @@
 
 ## WINDOWS
 
- If using Cygwin:
-    ```
-    ./configure
-    make
-    make install
-    ```
+If using Cygwin:
+```
+ ./configure
+ make
+ make install
+```
 
- If using Visual Studio:
+If using Visual Studio:
 
-    Follow the directions at the link for running CMake on Windows:
-    http://www.opentissue.org/wikitissue/index.php/Using_CMake
+Follow the directions at the link for running CMake on Windows:
+http://www.opentissue.org/wikitissue/index.php/Using_CMake
     
-    NOTE: Select the "build" folder as the location to build the binaries.
+**NOTE**: Select the `build` folder as the location to build the binaries.
     
     
 ## MAC OS X
