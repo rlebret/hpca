@@ -28,7 +28,7 @@ See the [EACL 2014 paper](http://lebret.ch/wp-content/uploads/2014/03/eacl2014.p
 
 ## GETTING WORD EMBEDDINGS
 
-This package includes 6 different tools:
+This package includes 6 different tools: `preprocess`, `vocab`, `cooccurrence`, `pca`, `embeddings` and `eval`.
 
 ### Corpus preprocessing 
 
@@ -38,6 +38,7 @@ Lowercase conversion and/or all numbers replaced with a special token ('0').
 The corpus needs to be a **tokenized** plain text file containing only the **sentences** of the corpus.
 
 Before running the `preprocess` tool, authors strongly recommend to follow these two steps:
+
 1.  Running a sentence detector, e.g. [the Apache OpenNLP Sentence Dectector](https://opennlp.apache.org/documentation/1.5.3/manual/opennlp.html#tools.sentdetect).
 ```
 ./apache-opennlp-1.5.3/bin/opennlp SentenceDetector ./apache-opennlp-1.5.3/bin/en-sent.bin < corpus.txt > corpus-sentences.txt
@@ -55,10 +56,81 @@ java -cp stanford-parser.jar edu.stanford.nlp.process.PTBTokenizer -preserveLine
 * `-gzip <int>`: Save in gzip format? 0 or 1 (default)
 * `-threads <int>`: Number of threads; default 8
 * `-verbose <int>`: Set verbosity: 0 or 1 (default)
+
 **Example**:
 ```
 preprocess -input-file corpus-token.txt -output-file corpus-clean.txt -lower 1 -digit 1 -verbose 1 -threads 8 -gzip 0
 ```
+
+### Vocabulary extraction
+
+Extracting words with their respective frequency.
+
+`vocab` options:
+* `-input-file <file>`: Input file from which to extract the vocabulary (gzip format is allowed)
+* `-vocab-file <file>`: Output file to save the vocabulary
+* `-threads <int>`: Number of threads; default 8
+* `-verbose <int>`: Set verbosity: 0 or 1 (default)
+
+**Example**:
+```
+vocab -input-file corpus-clean.txt -vocab-file vocab.txt -nthread 8 -verbose 1
+```
+
+### Getting co-occurrence probability matrix
+
+Constructing word-word cooccurrence statistics from the corpus. 
+The user should supply a vocabulary file, as produced by 'vocab'.
+
+`cooccurrence` options:
+* `-input-file <file>`: Input file containing the tokenized and cleaned corpus text (gzip format is allowed)
+* `-vocab-file <file>`: Vocabulary file
+* `-output-dir <dir>`: Output directory name to save files
+* `-min-freq <int>`: Discarding all words with a lower appearance frequency (default is 100)
+* `-upper-bound <float>`: Discarding words from the context vocabulary with a upper appearance frequency (default is 1.0)
+* `-lower-bound <float>`: Discarding words from the context vocabulary with a lower appearance frequency (default is 0.00001)
+* `-cxt-size <int>`: Symmetric context size around words(default is 5)
+* `-dyn-cxt <int>`: Dynamic context window, i.e. weighting by distance form the focus word: 0=off (default), 1=on
+* `-memory <float>`: Soft limit for memory consumption in GB; default 4.0
+* `-threads <int>`: Number of threads; default 8
+* `-verbose <int>`: Set verbosity: 0 or 1 (default)
+
+**Example**:
+```
+cooccurrence -input-file corpus-clean.txt -vocab-file vocab.txt -output-dir path_to_dir -min-freq 100 -cxt-size 5 -dyn-cxt 1 -memory 4.0 -upper-bound 1.0 -lower-bound 0.00001 -verbose 1 -threads 8
+```
+
+`cooccurence` will create the following files into the directory specified by the `-output-dir` option:
+* `coccurrence.bin`: binary file containing the counts
+* `target_words.txt`: vocabulary of words from which embeddings will be generated (rows of the cooccurrence matrix)
+* `context_words.txt`: vocabulary of context words (columns of the cooccurrence matrix)
+
+## Performing Hellinger PCA
+
+Randomized SVD with respect to the Hellinger distance.
+
+Let `A` be a sparse matrix to be analyzed with `n` rows and `m` columns, and `r` be the ranks of a truncated SVD (with `r < min(n,m)`).
+Formally, the SVD of `A` is a factorization of the form `A = U S Vᵀ`.
+
+Here, we'll focus on some modern randomized matrix approximation techniques, developed in (amongst others) in [Finding structure with randomness: Probabilistic algorithms for constructing approximate matrix decompositions](http://arxiv.org/abs/0909.4061), a 2009 paper by Nathan Halko, Per-Gunnar Martinsson and Joel A. Tropp.
+
+This tool uses the external [redsvd](https://code.google.com/p/redsvd/) library.
+
+`pca` options:
+* `-input-dir <dir>`: Directory where to find the `cooccurrence.bin` file
+* `-rank <int>`: Number of components to keep; default 300
+* `-threads <int>`: Number of threads; default 8
+* `-verbose <int>`: Set verbosity: 0 or 1 (default)
+
+**Example**:
+```
+pca -input-dir path_to_cooccurence_file -rank 300
+```
+
+`pca` will create the following files into the directory specified by the `-input-dir` option:
+* `svd.U`: orthonomal matrix U
+* `svd.S`: diagonal matrix S whose entries are singular values
+* `svd.V`: orthonomal matrix V
 
 ## AUTHORS 
 

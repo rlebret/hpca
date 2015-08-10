@@ -119,14 +119,14 @@ int main(int argc, char **argv) {
         printf("Usage options:\n");
         printf("\t-verbose <int>\n");
         printf("\t\tSet verbosity: 0 or 1 (default)\n");
-        printf("\t-input-dir <file>\n");
+        printf("\t-input-dir <dir>\n");
         printf("\t\tDirectory where to find cooccurrence.bin file\n");
         printf("\t-rank <int>\n");
         printf("\t\tNumber of components to keep; default 300\n");
         printf("\t-threads <int>\n");
         printf("\t\tNumber of threads; default 8\n");
         printf("\nExample usage:\n");
-        printf("./pca -input-dir path_to_cooccurence_file -rank 300\n\n");
+        printf("./pca -input-dir path_to_dir -rank 300\n\n");
         return 0;
     }
     

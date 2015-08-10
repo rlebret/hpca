@@ -27,7 +27,7 @@ char *c_input_file_name, *c_vocab_file_name, *c_output_dir_name, *c_output_file_
 int vocab_size=0;
 long ntoken=0;
 float upper_bound=1.0;
-float lower_bound=0.0;
+float lower_bound=0.00001;
 int Wid=0;
 int Cid_upper=0;
 int Cid_lower=0;
@@ -377,15 +377,15 @@ int main(int argc, char **argv) {
     c_output_dir_name = (char*)malloc(sizeof(char) * MAX_PATH_NAME);
     
     if (argc == 1) {
-        printf("HPCA: Hellinger PCA for Word Representation, get co-occurence probability matrix\n");
+        printf("HPCA: Hellinger PCA for Word Representation, get co-occurrence probability matrix\n");
         printf("Author: Remi Lebret (remi@lebret.ch)\n\n");
         printf("Usage options:\n");
         printf("\t-verbose <int>\n");
         printf("\t\tSet verbosity: 0 or 1 (default)\n");
         printf("\t-input-file <file>\n");
-        printf("\t\tInput file to preprocess\n");
+        printf("\t\tInput file containing the tokenized and cleaned corpus text.\n");
         printf("\t-vocab-file <file>\n");
-        printf("\t\tVocabulary file name\n");
+        printf("\t\tVocabulary file\n");
         printf("\t-output-dir <dir>\n");
         printf("\t\tOutput directory name to save files\n");
         printf("\t-min-freq <int>\n");

@@ -126,7 +126,7 @@ int main(int argc, char **argv) {
         printf("\t-verbose <int>\n");
         printf("\t\tSet verbosity: 0 or 1 (default)\n");
         printf("\t-input-dir <dir>\n");
-        printf("\t\tDirectory where to find cooccurrence.bin file\n");
+        printf("\t\tDirectory where to find files from the SVD\n");
         printf("\t-output-name <string>\n");
         printf("\t\tFilename for embeddings file which will be placed in <input-dir> (default is words.txt)\n");
         printf("\t-eig <float>\n");
@@ -136,7 +136,7 @@ int main(int argc, char **argv) {
         printf("\t-norm <int>\n");
         printf("\t\tAre vectors normalized to unit length? 0 or 1 (default is 0)\n");
         printf("\nExample usage:\n");
-        printf("./pca -input-dir path_to_cooccurence_file -rank 300\n\n");
+        printf("./embeddings -input-dir path_to_cooccurence_file -rank 300\n\n");
         return 0;
     }
     
