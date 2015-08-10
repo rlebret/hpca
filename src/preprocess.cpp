@@ -92,7 +92,7 @@ int merge(const int nthreads){
     std::string output_file_name = std::string(c_output_file_name);
     std::string combined_file_name = output_file_name;
     if (zip) combined_file_name += ".gz";
-    std::ofstream combined_file( combined_file_name, std::ofstream::out ) ;
+    std::ofstream combined_file( combined_file_name.c_str(), std::ofstream::out ) ;
     for (int i=nthreads-1; i>=0; i--){
         std::string thread_file_name = output_file_name + "-" + typeToString(i);
         if (zip) thread_file_name += ".gz";
