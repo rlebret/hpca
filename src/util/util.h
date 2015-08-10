@@ -128,8 +128,6 @@ std::string remove_first_characters( const std::string & Str, char C );
  */
 int find_arg(char *str, int argc, char **argv);
 
-char *strdup(const char *s);
-
 /** @} */
 
 #endif /*UTIL_H_*/

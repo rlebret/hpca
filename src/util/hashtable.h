@@ -46,8 +46,6 @@ struct hashtable_s {
  
 typedef struct hashtable_s hashtable_t;
 
-char *strdup(const char *s);
-
 /* Create a new hashtable. */
 hashtable_t *ht_create( int size );
 
