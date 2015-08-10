@@ -24,6 +24,7 @@ See the [EACL 2014 paper](http://lebret.ch/wp-content/uploads/2014/03/eacl2014.p
 ## INSTALLING
 
  Once the project has been built (see "BUILDING"), execute `sudo make install`.
+ 
  See [Install](INSTALL.md) for more details.
 
 ## GETTING WORD EMBEDDINGS
