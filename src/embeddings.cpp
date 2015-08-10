@@ -18,10 +18,8 @@
 #include "redsvd/redsvdFile.h"
 
 // define global variables
-int verbose = true; // true or false
 int norm = false; // true or false
 int dim = 100;
-
 float eig=0.0;
 char *c_input_dir_name, *c_input_file_U_name, *c_input_file_S_name, *c_output_file_name;
 
@@ -140,7 +138,6 @@ int main(int argc, char **argv) {
         return 0;
     }
     
-    if ((i = find_arg((char *)"-verbose", argc, argv)) > 0) verbose = atoi(argv[i + 1]);
     if ((i = find_arg((char *)"-norm", argc, argv)) > 0) norm = atoi(argv[i + 1]);
     if ((i = find_arg((char *)"-dim", argc, argv)) > 0) dim = atoi(argv[i + 1]);
     if ((i = find_arg((char *)"-eig", argc, argv)) > 0) eig = atof(argv[i + 1]);

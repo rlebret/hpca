@@ -80,7 +80,7 @@ vocab -input-file corpus-clean.txt -vocab-file vocab.txt -nthread 8 -verbose 1
 ### Getting co-occurrence probability matrix
 
 Constructing word-word cooccurrence statistics from the corpus. 
-The user should supply a vocabulary file, as produced by 'vocab'.
+The user should supply a vocabulary file, as produced by `vocab`.
 
 `cooccurrence` options:
 * `-input-file <file>`: Input file containing the tokenized and cleaned corpus text (gzip format is allowed)
@@ -108,7 +108,7 @@ cooccurrence -input-file corpus-clean.txt -vocab-file vocab.txt -output-dir path
 ## Performing Hellinger PCA
 
 Randomized SVD with respect to the Hellinger distance.
-The user should supply the directory where files produced by 'cooccurrence' are.
+The user should supply the directory where files produced by `cooccurrence` are.
 
 Let `A` be a sparse matrix to be analyzed with `n` rows and `m` columns, and `r` be the ranks of a truncated SVD (with `r < min(n,m)`).
 Formally, the SVD of `A` is a factorization of the form `A = U S Vᵀ`.
@@ -137,7 +137,7 @@ pca -input-dir path_to_cooccurence_file -rank 300
 ## Extracting word embeddings
 
 Generating word embeddings from the Hellinger PCA.
-The user should supply the directory where files produced by 'pca' are.
+The user should supply the directory where files produced by `pca` are.
 
 `embeddings` options:
 * `-input-dir <dir>`: Directory where to find files from the randomized SVD
@@ -145,12 +145,39 @@ The user should supply the directory where files produced by 'pca' are.
 * `-dim <int>`: Word vector dimension; default 100
 * `-eig <float>`: Eigenvalue weighting (0.0, 0.5 or 1.0); default is 0.0
 * `-norm <int>`: Are vectors normalized to unit length? 0 or 1 (default is 0)
-* `-verbose <int>`: Set verbosity: 0 or 1 (default)
 
 **Example**:
 ```
 embeddings -input-dir path_to_svd_files -output-name words.txt -eig 0.0 -dim 100 -norm 0
 ```
+
+## Evaluating word embeddings
+
+This tool provides a quick evaluation of the word embeddings produced by `embeddings`.
+
+It contains the following evaluation datasets:
+* [The WordSimilarity-353 Test Collection](http://www.cs.technion.ac.il/~gabr/resources/data/wordsim353/)
+* [The Rubenstein and Goodenough dataset](http://dl.acm.org/citation.cfm?id=365657)
+* [The Stanford Rare Word (RW) Similarity Dataset](http://www-nlp.stanford.edu/~lmthang/morphoNLM/)
+* [The Microsoft Research Syntactic Analogies Dataset](http://aclweb.org/aclwiki/index.php?title=Syntactic_Analogies_(State_of_the_art))
+* [The Google Semantic Analogies Dataset](http://arxiv.org/abs/1301.3781)
+
+`eval` options:
+* `-input-file <file>`: File containing word embeddings to evaluate
+* `-vocab-file <file>`: File containing word vocabulary
+* `-ws353 <int>`: Do WordSim-353 evaluation: 0 or 1 (default)
+* `-rg65 <int>`: Do Rubenstein and Goodenough 1965 evaluation: 0 or 1 (default)
+* `-rw <int>`: Do Stanford Rare Word evaluation: 0 or 1 (default)
+* `-syn <int>`: Do Microsoft Research Syntactic Analogies: 0 or 1 (default)
+* `-sem <int>`: Do Google Semantic Analogies: 0 or 1 (default)
+* `-verbose <int>`: Set verbosity: 0 or 1 (default)
+
+**Example**:
+```
+eval -input-file words.txt -vocab-file target_vocab.txt -ws353 1 -rg65 1 -rw 1 -syn 1 -sem 1 -verbose 1
+```
+
+**NOTE**: To speed up the implementation of the analogies, candidate solutions come from a closed vocabulary.
 
 ## AUTHORS 
 

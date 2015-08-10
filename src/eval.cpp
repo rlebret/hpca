@@ -298,7 +298,7 @@ int main(int argc, char **argv) {
     c_vocab_file_name = (char*)malloc(sizeof(char) * MAX_PATH_NAME + MAX_FILE_NAME);
     
     if (argc == 1) {
-        printf("HPCA: Hellinger PCA for Word Representation, embeddings computation\n");
+        printf("HPCA: Hellinger PCA for Word Representation, embeddings evaluation\n");
         printf("Author: Remi Lebret (remi@lebret.ch)\n\n");
         printf("Usage options:\n");
         printf("\t-verbose <int>\n");
@@ -313,8 +313,12 @@ int main(int argc, char **argv) {
         printf("\t\tDo Rubenstein and Goodenough 1965 evaluation: 0 or 1 (default)\n");
         printf("\t-rw <int>\n");
         printf("\t\tDo Stanford Rare Word evaluation: 0 or 1 (default)\n");
+        printf("\t-syn <int>\n");
+        printf("\t\tDo Microsoft Research Syntactic Analogies: 0 or 1 (default)\n");
+        printf("\t-sem <int>\n");
+        printf("\t\tDo Google Semantic Analogies: 0 or 1 (default)\n");
         printf("\nExample usage:\n");
-        printf("./eval -input-file path_to_words -vocab-file path_to_vocab -ws353 1 -rg65 1 -rw 1\n\n");
+        printf("./eval -input-file path_to_words -vocab-file path_to_vocab -ws353 1 -rg65 1 -rw 1 -syn 0 -sem 0\n\n");
         return 0;
     }
     
