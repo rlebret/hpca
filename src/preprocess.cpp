@@ -96,7 +96,7 @@ int merge(const int nthreads){
     for (int i=nthreads-1; i>=0; i--){
         std::string thread_file_name = output_file_name + "-" + typeToString(i);
         if (zip) thread_file_name += ".gz";
-        std::ifstream file(thread_file_name) ;
+        std::ifstream file(thread_file_name.c_str()) ;
         combined_file << file.rdbuf();
         std::remove(thread_file_name.c_str());
     }
