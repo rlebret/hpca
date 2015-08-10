@@ -40,7 +40,7 @@
  sudo make install
 ```
 
-## LINUX ==
+## LINUX
 ```
  ./configure
  make

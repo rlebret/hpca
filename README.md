@@ -1,4 +1,4 @@
-**hpca** provides an efficient implementation of the Hellinger PCA for computation word embeddings.
+**hpca** provides an efficient implementation of the Hellinger PCA for computating word embeddings.
 See the [EACL 2014 paper](http://lebret.ch/wp-content/uploads/2014/03/eacl2014.pdf) for more details.
 
 ## PREREQUISITES
@@ -25,7 +25,43 @@ See the [EACL 2014 paper](http://lebret.ch/wp-content/uploads/2014/03/eacl2014.p
 
  Once the project has been built (see "BUILDING"), execute `sudo make install`.
  See [Install](INSTALL.md) for more details.
- 
-## CONTACT
 
-remi@lebret.ch
+## GETTING WORD EMBEDDINGS
+
+This package includes 6 different tools:
+
+1. Corpus preprocessing: lowercase conversion and/or all numbers replaced with a special token ('0').
+
+The corpus needs to be a plain text file containing only the sentences of the corpus.
+This plain text file must be clean and tokenized.
+Before running the `preprocess` tool, authors strongly recommend to follow these two steps:
+1.  Running a sentence detector, e.g. [the Apache OpenNLP Sentence Dectector](https://opennlp.apache.org/documentation/1.5.3/manual/opennlp.html#tools.sentdetect).
+```
+./apache-opennlp-1.5.3/bin/opennlp SentenceDetector ./apache-opennlp-1.5.3/bin/en-sent.bin < corpus.txt > corpus-sentences.txt
+```
+2.  Running a tokenizer, e.g. [the Stanford Tokenizer](http://nlp.stanford.edu/software/tokenizer.shtml).
+```
+java -cp stanford-parser.jar edu.stanford.nlp.process.PTBTokenizer -preserveLines corpus-sentences.txt > corpus-token.txt
+```
+**Example**:
+```
+preprocess -input-file corpus-token.txt -output-file corpus-clean.txt -lower 1 -digit 1 -verbose 1 -threads 8 -gzip 0
+```
+
+## AUTHORS 
+
+ * Rémi Lebret: remi@lebret.ch
+
+## ACKNOWLEDGEMENTS
+
+  * Eigen3 -- http://eigen.tuxfamily.org
+
+  Eigen 3 is a lightweight C++ template library for vector and matrix math, a.k.a. linear algebra.
+  
+
+  * redsvd -- https://code.google.com/p/redsvd/
+
+  redsvd is a library for solving several matrix decompositions including singular value decomposition (SVD), principal component analysis (PCA), and eigen value decomposition.
+  redsvd uses Eigen3.
+
+
