@@ -39,12 +39,12 @@ The corpus needs to be a **tokenized** plain text file containing only the **sen
 
 Before running the `preprocess` tool, authors strongly recommend to follow these two steps:
 
-1. Running a sentence detector, e.g. [the Apache OpenNLP Sentence Dectector](https://opennlp.apache.org/documentation/1.5.3/manual/opennlp.html#tools.sentdetect).
+1) Running a sentence detector, e.g. [the Apache OpenNLP Sentence Dectector](https://opennlp.apache.org/documentation/1.5.3/manual/opennlp.html#tools.sentdetect).
 ```
 ./apache-opennlp-1.5.3/bin/opennlp SentenceDetector ./apache-opennlp-1.5.3/bin/en-sent.bin < corpus.txt > corpus-sentences.txt
 ```
 
-2. Running a tokenizer, e.g. [the Stanford Tokenizer](http://nlp.stanford.edu/software/tokenizer.shtml).
+2) Running a tokenizer, e.g. [the Stanford Tokenizer](http://nlp.stanford.edu/software/tokenizer.shtml).
 ```
 java -cp stanford-parser.jar edu.stanford.nlp.process.PTBTokenizer -preserveLines corpus-sentences.txt > corpus-token.txt
 ```
