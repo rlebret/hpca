@@ -1,4 +1,4 @@
-**hpca** provides an efficient implementation of the Hellinger PCA for computating word embeddings.
+**hpca** provides an efficient implementation of the Hellinger PCA for computing word embeddings.
 See the [EACL 2014 paper](http://lebret.ch/wp-content/uploads/2014/03/eacl2014.pdf) for more details.
 
 ## PREREQUISITES

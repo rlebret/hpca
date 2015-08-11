@@ -21,6 +21,10 @@
 //    GlobalVectors@googlegroups.com
 //    http://www-nlp.stanford.edu/projects/glove/
 
+/**
+ * @file       data.h
+ * @brief	   tool to calculate word-word cooccurrence statistics
+ */
 
 #ifndef __HPCA__data__
 #define __HPCA__data__
@@ -71,25 +75,67 @@ struct cooccur_id {
 typedef cooccur_id cooccur_id_t;
 
 
-/* Write cooccurrence records to file, accumulating duplicate entries */
+/**
+ * @brief Write cooccurrence records to file, accumulating duplicate entries 
+ *
+ * @param cr pointer to @c cooccur_t object
+ * @param length size of the object to write
+ * @param fout file stream
+ **/
 int write(cooccur_t *cr, unsigned long long length, FILE *fout);
 
-/* Check if two cooccurrence records are for the same two words, used for qsort */
+/**
+ * @brief Check if two cooccurrence records are for the same two words, used for qsort
+ *
+ * @param a pointer to the first record
+ * @param b pointer to the second record
+ **/
 int compare(const void *a, const void *b);
 
-/* Check if two cooccurrence records are for the same two words */
+/**
+ * @brief Check if two cooccurrence records are for the same two words
+ *
+ * @param a pointer to the first @c cooccur_id_t object
+ * @param b pointer to the second @c cooccur_id_t object
+ **/
 int compare_id(cooccur_id_t a, cooccur_id_t b);
 
-/* Swap two entries of priority queue */
+
+/**
+ * @brief Swap two entries of priority queue
+ *
+ * @param pq pointer to a @c cooccur_id_t object
+ * @param i first index
+ * @param j second index
+ **/
 void swap_entry(cooccur_id_t *pq, int i, int j);
 
-/* Insert entry into priority queue */
+
+/**
+ * @brief Insert entry into priority queue
+ *
+ * @param pq pointer to a @c cooccur_id_t object
+ * @param size size of the priority queue
+ **/
 void insert_pq(cooccur_id_t *pq, cooccur_id_t new_id, int size);
 
-/* Delete entry from priority queue */
+
+/**
+ * @brief Delete entry from priority queue
+ *
+ * @param pq pointer to a @c cooccur_id_t object
+ * @param size size of the priority queue
+ **/
 void delete_pq(cooccur_id_t *pq, int size);
 
-/* Write top node of priority queue to file, accumulating duplicate entries */
+
+/**
+ * @brief Write top node of priority queue to file, accumulating duplicate entries
+ *
+ * @param new_id a new @c cooccur_id_t object to merge
+ * @param old_id pointer to @c cooccur_t object
+ * @param fout file stream
+ **/
 int merge_write(cooccur_id_t new_id, cooccur_id_t *old_id, FILE *fout);
 
 /** @} */

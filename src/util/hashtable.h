@@ -1,6 +1,8 @@
 /**
+ * [https://gist.github.com/tonious/1377667]
+ * 
  * @file       hashtable.h
- * @author     Remi Lebret
+ * @author     Tony Thompson
  * @brief	   hashtable functions
  */
 
@@ -46,29 +48,82 @@ struct hashtable_s {
  
 typedef struct hashtable_s hashtable_t;
 
-/* Create a new hashtable. */
+/**
+ * @brief Create a new hashtable. 
+ *
+ * @param size size of the hashtable
+ *
+ * @return a new @c hashtable_t object
+ **/
 hashtable_t *ht_create( int size );
 
-/* Delete a hashtable. */
+/**
+ * @brief Delete a hashtable. 
+ *
+ * @param hashtable pointer to a @c hashtable_t object
+ **/
 void ht_delete( hashtable_t *hashtable );
 
-/* Hash a string for a particular hash table. */
+
+/**
+ * @brief Hash a string for a particular hash table.
+ *
+ * @param hashtable pointer to a @c hashtable_t object
+ * @param key a string of characters containing a hashtable key
+ **/
 int ht_hash( hashtable_t *hashtable, char *key );
 
-/* Create a key pair. */
+/**
+ * @brief Create a key pair.
+ *
+ * @param key a string of characters containing a hashtable key
+ * 
+ * @return a new @c entry_t object
+ **/
 entry_t *ht_newpair( char *key );
-/* Create a key-value pair. */
+
+/**
+ * @brief Create a key-value pair. 
+ *
+ * @param key a string of characters containing a hashtable key
+ * @param value an integer to associate with the key
+ *
+ * @return a new @c entry_t object
+ */
 entry_t *ht_newpair( char *key, unsigned int value );
 
-/* Insert a key into a hash table. */
+/**
+ * @brief Insert a key into a hash table. 
+ *
+ *
+ **/
 void ht_insert( hashtable_t *hashtable, char *key );
-/* Insert a key-value pair into a hash table. */
+
+/** 
+ * @brief Insert a key-value pair into a hash table. 
+ *
+ * @param hashtable pointer to a @c hashtable_t object
+ * @param key a string of characters containing a hashtable key
+ * @param value an integer to associate with the key
+ **/
 void ht_insert( hashtable_t *hashtable, char *key, unsigned int value );
 
-/* Retrieve a key-value pair from a hash table. */
+/**
+ * @brief Retrieve a key-value pair from a hash table. 
+ *
+ * @param hashtable pointer to a @c hashtable_t object
+ * @param key a string of characters containing a hashtable key
+ *
+ * @return the value
+ **/
 int ht_get( hashtable_t *hashtable, char *key ) ;
 
-/* Function to print nodes in a given linked list */
+/**
+ * @brief Function to print nodes in a given linked list.
+ *
+ * @param filename string of characters containing the filename
+ * @param hashtable pointer to a @c hashtable_t object
+ **/
 void ht_print(const char *filename, hashtable_t* hashtable);
 
 

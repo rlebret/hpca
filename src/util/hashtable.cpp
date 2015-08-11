@@ -1,9 +1,10 @@
-/* ============================================================================
- * Name        : hashtable.cpp
- * Author      : Tony Thompson
- * Description : hash table implementation in C
- * ============================================================================
+/**
+ * [https://gist.github.com/tonious/1377667]
+ *
+ * Public Domain Hashtable
+ * Copyright (c) 2011 Tony Thompson (tonious).
  */
+
 #include "util.h"
 #include "hashtable.h"
 #include <stdlib.h>

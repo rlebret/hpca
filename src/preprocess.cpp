@@ -1,10 +1,21 @@
+// This tool provides a lowercase conversion and/or a replacement of all numbers with a special token ('0') for a given corpus text.
 //
-//  preprocess.cpp
-//  hpca
+// Copyright (c) 2015 Idiap Research Institute, http://www.idiap.ch/
+// Written by Rémi Lebret <remi@lebret.ch>
 //
-//  Created by Rémi Lebret on 14/07/2015.
+// This file is part of HPCA.
 //
+// HPCA is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License version 3 as
+// published by the Free Software Foundation.
 //
+// HPCA is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with HPCA. If not, see <http://www.gnu.org/licenses/>.
 
 #include <stdexcept>
 #include <fstream>
@@ -159,6 +170,7 @@ int main(int argc, char **argv) {
     
     if ((i = find_arg((char *)"-verbose", argc, argv)) > 0) verbose = atoi(argv[i + 1]);
     if ((i = find_arg((char *)"-lower", argc, argv)) > 0) lower = atoi(argv[i + 1]);
+    if ((i = find_arg((char *)"-digit", argc, argv)) > 0) digit = atoi(argv[i + 1]);
     if ((i = find_arg((char *)"-threads", argc, argv)) > 0) num_threads = atoi(argv[i + 1]);
     if ((i = find_arg((char *)"-gzip", argc, argv)) > 0) zip = atoi(argv[i + 1]);
     if ((i = find_arg((char *)"-output-file", argc, argv)) > 0) strcpy(c_output_file_name, argv[i + 1]);

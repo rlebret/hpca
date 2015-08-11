@@ -21,8 +21,8 @@
 //    GlobalVectors@googlegroups.com
 //    http://www-nlp.stanford.edu/projects/glove/
 
-#include "data.h"
 
+#include "data.h"
 
 /* Write cooccurrence records to file, accumulating duplicate entries */
 int write(cooccur_t *cr, unsigned long long length, FILE *fout) {
