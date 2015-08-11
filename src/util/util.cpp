@@ -376,9 +376,8 @@ char * string_copy(char *dest, const char *src, int *i, char const delim)
 
    for(p = src, q = dest; *p != delim && *p != '\0'; p++)
    {
-     if( (*p != ' ') && (*p != '"') )
-     {  *q = *p; q++;    }
-     ++(*i);
+       *q = *p; q++;
+       ++(*i);
    }
    *q = '\0';
 

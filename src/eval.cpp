@@ -29,6 +29,25 @@
 #include "util/hashtable.h"
 #include "util/constants.h"
 
+// include datasets
+#include "data/wordsim353.h"
+#include "data/rg65.h"
+#include "data/rareword.h"
+#include "data/question/gram1-adjective-to-adverb.h"
+#include "data/question/gram2-opposite.h"
+#include "data/question/gram3-comparative.h"
+#include "data/question/gram4-superlative.h"
+#include "data/question/gram5-present-participle.h"
+#include "data/question/gram6-nationality-adjective.h"
+#include "data/question/gram7-past-tense.h"
+#include "data/question/gram8-plural.h"
+#include "data/question/gram9-plural-verbs.h"
+#include "data/question/family.h"
+#include "data/question/capital-common-countries.h"
+#include "data/question/capital-world.h"
+#include "data/question/city-in-state.h"
+#include "data/question/currency.h"
+
 // include redsvd headers
 #include "redsvd/util.h"
 
@@ -144,28 +163,31 @@ float const getstd(const std::vector<float>& vec, const float mean){
 
 /* worker for similarity dataset */
 void runsimilarity( const Eigen::MatrixXf& words
-                  , const char * filename ){
+                  , char * data
+                  , unsigned int length){
     
-    // get data from file
-    File fp(filename);
-    fp.open();
+    // get data
+    char * ptr_data = data;
+    char * buffer = (char*)malloc(MAX_TOKEN);
     char token1[MAX_TOKEN];
     char token2[MAX_TOKEN];
     float coeff;
     
+    int itr=0;
     int i,j;
     std::vector<int> idx1, idx2;
     std::vector<float> gold;
-    char * line = NULL;
-    while ((line = fp.getline()) != NULL) {
-        sscanf(line, "%s\t%s\t%f", token1, token2, &coeff);
+    while ((buffer = string_copy(buffer, ptr_data, &itr, '\n')) != '\0') {
+        sscanf(buffer, "%s\t%s\t%f", token1, token2, &coeff);
         if ( ((i = ht_get(hash, token1))) && ((j = ht_get(hash, token2))) ){
             idx1.push_back(i);
             idx2.push_back(j);
             gold.push_back(coeff);
         }
+        ptr_data=&data[++itr];
+        if (itr==length) break;
     }
-    fp.close();
+    free(buffer);
 
     
     const int npairs=gold.size();
@@ -221,20 +243,22 @@ void runsimilarity( const Eigen::MatrixXf& words
 
 /* worker for analogies dataset */
 float const runanalogy( const Eigen::MatrixXf& words
-                      , const char * filename){
+                       , char * data
+                       , unsigned int length){
     
+    // get data
+    char * ptr_data = data;
+    char * buffer = (char*)malloc(MAX_TOKEN);
     char token1[MAX_TOKEN];
     char token2[MAX_TOKEN];
     char token3[MAX_TOKEN];
     char token4[MAX_TOKEN];
     int i,j,k,l;
+    int itr=0;
     
     std::vector<int> a,b,c,d,idx;
-    File fp(filename);
-    fp.open();
-    char * line = NULL;
-    while ((line = fp.getline()) != NULL) {
-        sscanf(line, "%s %s %s %s", token1, token2, token3, token4);
+    while ((buffer = string_copy(buffer, ptr_data, &itr, '\n')) != '\0') {
+        sscanf(buffer, "%s %s %s %s", token1, token2, token3, token4);
         if (   ((i = ht_get(hash, token1)))
             && ((j = ht_get(hash, token2)))
             && ((k = ht_get(hash, token3)))
@@ -248,8 +272,10 @@ float const runanalogy( const Eigen::MatrixXf& words
             idx.push_back(k);
             idx.push_back(l);
         }
+        ptr_data=&data[++itr];
+        if (itr==length) break;
     }
-    fp.close();
+    free(buffer);
     
     // get unique indices
     std::vector<int>::iterator it;
@@ -335,7 +361,7 @@ int main(int argc, char **argv) {
     }
     
     if ((i = find_arg((char *)"-verbose", argc, argv)) > 0) verbose = atoi(argv[i + 1]);
-    if ((i = find_arg((char *)"-sim353", argc, argv)) > 0) ws = atoi(argv[i + 1]);
+    if ((i = find_arg((char *)"-ws353", argc, argv)) > 0) ws = atoi(argv[i + 1]);
     if ((i = find_arg((char *)"-rg65", argc, argv)) > 0) rg = atoi(argv[i + 1]);
     if ((i = find_arg((char *)"-rw", argc, argv)) > 0) rw = atoi(argv[i + 1]);
     if ((i = find_arg((char *)"-syn", argc, argv)) > 0) syn = atof(argv[i + 1]);
@@ -361,7 +387,7 @@ int main(int argc, char **argv) {
             fprintf(stderr, "------------------------------------------------\n");
             
         }
-        runsimilarity( words, "../../data/wordsim353.txt");
+        runsimilarity( words, wordsim353_txt, wordsim353_txt_len);
     }
     if (rg){
         if (verbose){
@@ -370,7 +396,7 @@ int main(int argc, char **argv) {
             fprintf(stderr, "------------------------------------------------\n");
             
         }
-        runsimilarity( words, "../../data/rg65.txt");
+        runsimilarity( words, rg65_txt, rg65_txt_len);
     }
     if (rw){
         if (verbose){
@@ -378,7 +404,7 @@ int main(int argc, char **argv) {
             fprintf(stderr, "Stanford Rare Word Dataset\n");
             fprintf(stderr, "------------------------------------------------\n");
         }
-        runsimilarity( words, "../../data/rareword.txt");
+        runsimilarity( words, rareword_txt, rareword_txt_len);
     }
     if (syn || sem){ // prepare stuff for cosine similary
         Eigen::VectorXf rownorm = words.rowwise().norm();
@@ -391,31 +417,28 @@ int main(int argc, char **argv) {
             fprintf(stderr, "Microsoft Research Syntactic Analogies\n");
             fprintf(stderr, "------------------------------------------------\n");
         }
-        const char * filename[]={"../../data/question/gram1-adjective-to-adverb.txt"
-            ,"../../data/question/gram2-opposite.txt"
-            ,"../../data/question/gram3-comparative.txt"
-            ,"../../data/question/gram4-superlative.txt"
-            ,"../../data/question/gram5-present-participle.txt"
-            ,"../../data/question/gram6-nationality-adjective.txt"
-            ,"../../data/question/gram7-past-tense.txt"
-            ,"../../data/question/gram8-plural.txt"
-            ,"../../data/question/gram9-plural-verbs.txt"};
-        const char * taskname[] = {"adjective-to-adverb"
-            ,"opposite"
-            ,"comparative"
-            ,"superlative"
-            ,"present-participle"
-            ,"nationality-adjective"
-            ,"past-tense"
-            ,"plural"
-            ,"plural-verbs"};
         
         float acc=0.0;
-        for (int i=0;i<9; i++){
-            if (verbose) fprintf(stderr,"---- %s analogies ----\n", taskname[i]);
-            acc += runanalogy( words, filename[i] );
-        }
-        if (verbose) fprintf(stderr,"\nSyntactic accuracy = %.4f\n", acc);
+        if (verbose) fprintf(stderr,"---- adjective-to-adverb analogies ----\n");
+        acc += runanalogy( words, question_gram1_adjective_to_adverb_txt, question_gram1_adjective_to_adverb_txt_len );
+        if (verbose) fprintf(stderr,"---- opposite analogies ----\n");
+        acc += runanalogy( words, question_gram2_opposite_txt, question_gram2_opposite_txt_len );
+        if (verbose) fprintf(stderr,"---- comparative analogies ----\n");
+        acc += runanalogy( words, question_gram3_comparative_txt, question_gram3_comparative_txt_len );
+        if (verbose) fprintf(stderr,"---- superlative analogies ----\n");
+        acc += runanalogy( words, question_gram4_superlative_txt, question_gram4_superlative_txt_len );
+        if (verbose) fprintf(stderr,"---- present-participle analogies ----\n");
+        acc += runanalogy( words, question_gram5_present_participle_txt, question_gram5_present_participle_txt_len );
+        if (verbose) fprintf(stderr,"---- nationality-adjective analogies ----\n");
+        acc += runanalogy( words, question_gram6_nationality_adjective_txt, question_gram6_nationality_adjective_txt_len );
+        if (verbose) fprintf(stderr,"---- past-tense analogies ----\n");
+        acc += runanalogy( words, question_gram7_past_tense_txt, question_gram7_past_tense_txt_len );
+        if (verbose) fprintf(stderr,"---- plural analogies ----\n");
+        acc += runanalogy( words, question_gram8_plural_txt, question_gram8_plural_txt_len );
+        if (verbose) fprintf(stderr,"---- plural-verbs analogies ----\n");
+        acc += runanalogy( words, question_gram9_plural_verbs_txt, question_gram9_plural_verbs_txt_len);
+        
+        if (verbose) fprintf(stderr,"\nSyntactic accuracy = %.4f\n", acc/9);
     }
     if (sem){
         if (verbose){
@@ -423,23 +446,20 @@ int main(int argc, char **argv) {
             fprintf(stderr, "Google Semantic Analogies\n");
             fprintf(stderr, "------------------------------------------------\n");
         }
-        const char * filename[]={"../../data/question/capital-common-countries.txt"
-            ,"../../data/question/capital-world.txt"
-            ,"../../data/question/city-in-state.txt"
-            ,"../../data/question/currency.txt"
-            ,"../../data/question/family.txt"};
-        const char * taskname[]={"capital-common-countries"
-            ,"capital-world"
-            ,"city-in-state"
-            ,"currency"
-            ,"family"};
         
         float acc=0.0;
-        for (int i=0;i<5; i++){
-            if (verbose) fprintf(stderr,"---- %s analogies ----\n", taskname[i]);
-            acc += runanalogy( words, filename[i] );
-        }
-        if (verbose) fprintf(stderr,"Semantic accuracy = %.4f\n", acc);
+        if (verbose) fprintf(stderr,"---- capital-common-countries analogies ----\n");
+        acc += runanalogy( words, question_capital_common_countries_txt, question_capital_common_countries_txt_len );
+        if (verbose) fprintf(stderr,"---- capital-world analogies ----\n");
+        acc += runanalogy( words, question_capital_world_txt, question_capital_world_txt_len );
+        if (verbose) fprintf(stderr,"---- city-in-stateanalogies ----\n");
+        acc += runanalogy( words, question_city_in_state_txt, question_city_in_state_txt_len );
+        if (verbose) fprintf(stderr,"---- currency.txtanalogies ----\n");
+        acc += runanalogy( words, question_currency_txt, question_currency_txt_len );
+        if (verbose) fprintf(stderr,"---- family analogies ----\n");
+        acc += runanalogy( words, question_family_txt, question_family_txt_len );
+        
+        if (verbose) fprintf(stderr,"\nSemantic accuracy = %.4f\n", acc/5);
     }
     // release memory
     ht_delete(hash);
