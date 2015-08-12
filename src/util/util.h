@@ -147,6 +147,17 @@ std::string remove_first_characters( const std::string & Str, char C );
  */
 int find_arg(char *str, int argc, char **argv);
 
+
+/**
+ *  @brief Display a progress bar
+ *
+ *  @param thread_id the thread id
+ *  @param x the current status
+ *  @param n total number of operation
+ *  @param w width of the progress bar
+ */
+void loadbar(int thread_id, unsigned int x, unsigned int n, unsigned int w = 50);
+
 /** @} */
 
 #endif /*UTIL_H_*/

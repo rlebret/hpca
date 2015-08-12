@@ -414,6 +414,23 @@ int find_arg(char *str, int argc, char **argv) {
     return -1;
 }
 
-
+// Display a progress bar
+void loadbar(int thread_id, unsigned int x, unsigned int n, unsigned int w)
+{
+    if ( (x != n) && (x % (n/100+1) != 0) ) return;
+ 
+    float ratio  =  x/(float)n;
+    int   c      =  ratio * w;
+ 
+    if (thread_id==-1)
+      fprintf(stderr, "%02d%% [", (int)(ratio*100));
+    else
+      fprintf(stderr, "pthread n°%02d -- %02d%% [", thread_id, (int)(ratio*100));
+    
+    for (int x=0; x<c; x++) fprintf(stderr,"=");
+    for (int x=c; x<w; x++) fprintf(stderr," ");
+    fprintf(stderr,"]\r"); 
+    fflush(stderr);
+}
 
 

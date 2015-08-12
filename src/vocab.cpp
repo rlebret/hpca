@@ -111,6 +111,7 @@ void *getvocab( void *p ){
     Thread* thread = (Thread*)p;
     const int start = thread->start();
     const int end = thread->end();
+    const int nbop = (end-start);
     // get output file name
     std::string output_file_name = std::string(c_vocab_file_name);
     
@@ -118,9 +119,10 @@ void *getvocab( void *p ){
     if (thread->id() != -1){
         thread->set();
         output_file_name += "-" + typeToString(thread->id());
-        if (verbose) printf("create pthread n°%ld, reading lines %d to %d\n",thread->id(), start+1, end);
+        if (verbose){
+            fprintf(stderr,"create pthread n°%ld, reading lines %d to %d\n",thread->id(), start+1, end);
+        }
     }
-    
     
     // create vocab
     hashtable_t *hash = ht_create(TSIZE);
@@ -130,10 +132,11 @@ void *getvocab( void *p ){
     input_file.open();
     input_file.jump_to_line(start);
     
-    long long ntoken=0;
+    long long ntokens=0;
     char delim = ' ';
     // read and store tokens
     char *line = NULL;
+    int itr=0;
     for (int i=start; i<end; i++){
         // get the line
         line = input_file.getline();
@@ -143,31 +146,30 @@ void *getvocab( void *p ){
             while(*line && (delim != *line)) line++;
             *line ^= olddelim = *line; // olddelim = *line; *line = 0;
             ht_insert( hash, olds);
-            if((((++ntoken)%100000) == 0) && verbose){
-                if (thread->id() != -1) fprintf(stderr,"pthread n°%ld --> %lld tokens.\n", thread->id(), ntoken);
-                else fprintf(stderr,"%lld tokens.\n", ntoken);
-            }
+            ntokens++;
             *line++ ^= olddelim; // *line = olddelim; line++;
             olds = line;
         }
+        if (verbose) loadbar(thread->id(), ++itr, nbop);
     }
     // closing input file
     input_file.close();
-    
+
     // exit thread
     if ( thread->id()!= -1 ){
+        long long *ptr_ntokens = (long long *) thread->object; 
+        // increment total number of tokens
+        (*ptr_ntokens) += ntokens;
         // write hash table
-        ht_print(output_file_name.c_str(), hash);
-        
+        ht_print(output_file_name.c_str(), hash);    
         // release hash table
         ht_delete(hash);
-        
-        if (verbose) printf("delete pthread n°%ld\n",thread->id());
+        // existing pthread
         pthread_exit( (void*)thread->id() );
     }else{
+        if (verbose) fprintf(stderr, "\ndone after reading %lld tokens.\n", ntokens);
         // write out
         writevocab(output_file_name, hash);
-        
         // release hash table
         ht_delete(hash);
     }
@@ -176,7 +178,7 @@ void *getvocab( void *p ){
 
 int merge(const int nthreads){
     
-    if (verbose) printf("merging all %d temporary files\n",nthreads);
+    if (verbose) fprintf(stderr,"merging all %d temporary files\n",nthreads);
     
     // get output file name
     std::string output_file_name = std::string(c_vocab_file_name);
@@ -220,7 +222,8 @@ int merge(const int nthreads){
  * Run with multithreading
  **/
 int run() {
-    
+
+    long long ntokens=0;
     std::string input_file_name = std::string(c_input_file_name);
     File input_file(input_file_name);
     int nbline = input_file.number_of_line();
@@ -230,12 +233,15 @@ int run() {
         + std::string(" is empty !!!\n");
         throw std::runtime_error(error_msg);
     }
-    if (verbose) printf("number of lines in %s = %d\n",c_input_file_name,nbline);
+    if (verbose) fprintf(stderr, "number of lines in %s = %d\n",c_input_file_name,nbline);
     
-    MultiThread threads( num_threads, 1, true, nbline, NULL, NULL);
+    MultiThread threads( num_threads, 1, true, nbline, NULL, &ntokens);
     threads.linear( getvocab );
     
-   if (threads.nb_thread()>1) merge(threads.nb_thread());
+   if (threads.nb_thread()>1){
+       if (verbose) fprintf(stderr, "\ndone after reading %lld tokens.\n", ntokens);
+       merge(threads.nb_thread());
+   } 
     
     return 0;
 }
@@ -254,7 +260,7 @@ int main(int argc, char **argv) {
         printf("\t\tSet verbosity: 0 or 1 (default)\n");
         printf("\t-input-file <file>\n");
         printf("\t\tInput file from which to extract the vocabulary\n");
-         printf("\t-vocab-file <file>\n");
+        printf("\t-vocab-file <file>\n");
         printf("\t\tOutput file to save the vocabulary\n");
         printf("\t-threads <int>\n");
         printf("\t\tNumber of threads; default 8\n");

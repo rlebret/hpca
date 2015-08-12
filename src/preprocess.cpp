@@ -47,6 +47,7 @@ void *preprocess( void *p )
     Thread* thread = (Thread*)p;
     const int start = thread->start();
     const int end = thread->end();
+    const int nbop = (end-start);
     // get output file name
     std::string output_file_name = std::string(c_output_file_name);
     
@@ -54,7 +55,7 @@ void *preprocess( void *p )
     if (thread->id() != -1){
         thread->set();
         output_file_name += "-" + typeToString(thread->id());
-        if (verbose) printf("create pthread n°%ld, reading lines %d to %d\n",thread->id(), start+1, end);
+        if (verbose) fprintf(stderr, "create pthread n°%ld, reading lines %d to %d\n",thread->id(), start+1, end);
     }  
     
     // create output file
@@ -68,6 +69,7 @@ void *preprocess( void *p )
     input_file.jump_to_line(start);
     
     char *line = NULL;
+    int itr=0;
     for (int i=start; i<end; i++){
         
         // get the line
@@ -82,6 +84,9 @@ void *preprocess( void *p )
         // write the preprocessed line
         output_file.write(line);
         output_file.write("\n");
+        
+        // display progress bar 
+        if (verbose) loadbar(thread->id(), ++itr, nbop);
     }
     // close output file
     output_file.close();
@@ -90,7 +95,6 @@ void *preprocess( void *p )
     
     // exit thread
     if ( thread->id()!= -1 ){
-        if (verbose) printf("delete pthread n°%ld\n",thread->id());
         pthread_exit( (void*)thread->id() );
     }
     return 0;
@@ -98,7 +102,7 @@ void *preprocess( void *p )
 
 int merge(const int nthreads){
     
-    if (verbose) printf("merge files\n");
+    if (verbose) fprintf(stderr, "\nmerging files\n");
     
     std::string output_file_name = std::string(c_output_file_name);
     std::string combined_file_name = output_file_name;
@@ -130,12 +134,14 @@ int run() {
         + std::string(" is empty !!!\n");
         throw std::runtime_error(error_msg);
     }
-    if (verbose) printf("number of lines in %s = %d\n",c_input_file_name,nbline);
+    if (verbose) fprintf(stderr, "number of lines in %s = %d\n",c_input_file_name,nbline);
     
     MultiThread threads( num_threads, 1, true, nbline, NULL, NULL);
     threads.linear( preprocess );
     
-    if (threads.nb_thread()>1) merge(threads.nb_thread());
+    if (threads.nb_thread()>1){
+        merge(threads.nb_thread());
+    }else fprintf(stderr,"\n");
     
     return 0;
 }
