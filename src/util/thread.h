@@ -1,6 +1,6 @@
 // Multi-threading utility functions
 //
-// Copyright (c) 2015 Idiap Research Institute, http://www.idiap.ch/
+// Copyright (c) 2009 PGXIS - UMR CNRS 8524
 // Written by Rémi Lebret <remi@lebret.ch>
 //
 // This file is part of HPCA.
@@ -64,8 +64,6 @@ class Thread
     void* that;
     /**< pointer on object on which apply the thread */
     void* object;
-    /**< pointer on a secondary object on which apply the thread */
-    void* object2;
     /**< force CPU affinity ? */
     bool force_cpu_affinity_;
 
@@ -75,31 +73,8 @@ class Thread
      *  Create an empty @c Thread
      */
     Thread() : start_(0), end_(0), id_(0)
-             , that(0), object(0), object2(0)
-    {
-#ifdef VERBOSE
-  printf("Thread::create()\n");
-#endif
-    }
-
-    /**
-     *  @brief Constructor
-     *
-     *  Create a unique thread in a multithreading process
-     *
-     *  @param t the pointer to that
-     *  @param o the pointer to object
-     *  @param end the ending point
-     */
-    Thread( void* t, void* o, const int end )
-          : start_(0), end_(end)
-          , id_(-1), that(t)
-          , object(o), object2(0)
-    {
-#ifdef VERBOSE
-  printf("Thread::create(%ld)\n",id_);
-#endif
-    }
+             , that(0), object(0)
+    {}
 
     /**
      *  @brief Destructor
@@ -107,11 +82,7 @@ class Thread
      *  Delete a @c Thread
      */
     ~Thread()
-    {
-#ifdef VERBOSE
-  printf("Thread::delete(%ld)\n",id_);
-#endif
-    }
+    {}
 
     /**
      *  @brief Accessor
@@ -225,28 +196,6 @@ class MultiThread
                , const int n_element
                , void* that
                , void* object
-               );
-
-    /**
-     *  @brief Constructor
-     *
-     *  Allocate memory for a @c MultiThread object.
-     *
-     *  @param n_thread the number of thread wanted
-     *  @param thread_per_cpu the number of thread per CPU
-     *  @param force_cpu_affinity boolean to force CPU affinity
-     *  @param n_element the number of variables to analyze
-     *  @param that pointer on object where the thread is called
-     *  @param object pointer on object on which apply the thread
-     *  @param object2 pointer on a secondary object on which apply the thread
-     */
-    MultiThread( const int n_thread
-               , const int thread_per_cpu
-               , bool const force_cpu_affinity
-               , const int n_element
-               , void* that
-               , void* object
-               , void* object2
                );
 
     /**

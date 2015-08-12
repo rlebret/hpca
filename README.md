@@ -115,9 +115,10 @@ The user should supply the directory where files produced by `cooccurrence` are.
 Let `A` be a sparse matrix to be analyzed with `n` rows and `m` columns, and `r` be the ranks of a truncated SVD (with `r < min(n,m)`).
 Formally, the SVD of `A` is a factorization of the form `A = U S Vᵀ`.
 
-Here, we'll focus on some modern randomized matrix approximation techniques, developed in (amongst others) in [Finding structure with randomness: Probabilistic algorithms for constructing approximate matrix decompositions](http://arxiv.org/abs/0909.4061), a 2009 paper by Nathan Halko, Per-Gunnar Martinsson and Joel A. Tropp.
+Unfortunately, computing the SVD can be extremely time-consuming as `A` is often a very large matrix. Thus, we turn to randomized methods which offer significant speedups over classical methods.
+This tool use some modern randomized matrix approximation techniques, developed in (amongst others) [Finding structure with randomness: Probabilistic algorithms for constructing approximate matrix decompositions](http://arxiv.org/abs/0909.4061), a 2009 paper by Nathan Halko, Per-Gunnar Martinsson and Joel A. Tropp.
 
-This tool uses the external [redsvd](https://code.google.com/p/redsvd/) library.
+This tool uses the external [redsvd](https://code.google.com/p/redsvd/) library, which implements this randomized SVD using [Eigen3](http://eigen.tuxfamily.org).
 
 `pca` options:
 * `-input-dir <dir>`: Directory where to find the `cooccurrence.bin` file

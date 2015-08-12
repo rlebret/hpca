@@ -22,9 +22,6 @@
 
 /*---- the configured options and settings for HPCA ---------------*/
 
-// should we use VERBOSE option?
-#cmakedefine VERBOSE
-
 // should we use Intel MKL through Eigen?
 #cmakedefine EIGEN_USE_MKL_ALL
 

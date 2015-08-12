@@ -1,6 +1,6 @@
 // Multi-threading utility functions
 //
-// Copyright (c) 2015 Idiap Research Institute, http://www.idiap.ch/
+// Copyright (c) 2009 PGXIS - UMR CNRS 8524
 // Written by Rémi Lebret <remi@lebret.ch>
 //
 // This file is part of HPCA.
@@ -87,36 +87,6 @@ MultiThread::MultiThread( const int n_thread
   if ( nb_thread_ == 1 ) thread_[0].id_ = -1;
 }
 
-/** Allocate memory to MultiThread object
- **/
-MultiThread::MultiThread( const int n_thread
-                        , const int thread_per_cpu
-                        , bool const force_cpu_affinity
-                        , const int n_element
-                        , void* that
-                        , void* object
-                        , void* object2
-                        )
-                        : nb_thread_(0)
-                        , nb_element_(n_element)
-                        , thread_(0)
-{
-  // get the optimal number of threads
-  nb_thread_ = optimal_nb_thread(n_thread, thread_per_cpu, n_element);
-  // create Threads
-  thread_ = new Thread[nb_thread_];
-  for (int i=0; i<nb_thread_; i++)
-  {
-    thread_[i].id_ = i;
-    thread_[i].force_cpu_affinity_ = force_cpu_affinity;
-    thread_[i].that = that;
-    thread_[i].object = object;
-    thread_[i].object2 = object2;
-  }
-  // update thread id if there is only one thread
-  if ( nb_thread_ == 1 ) thread_[0].id_ = -1;
-}
-
 /** release memory
  **/
 MultiThread::~MultiThread()
@@ -170,18 +140,6 @@ void MultiThread::linear( void* (*run)( void*) )
   else // for multi threads
   {
     // number of variables in each thread
-/*    const int nb_op = nb_element_ / nb_thread_;
-
-    // add the start and the end of each data block
-    for (int i=0; i<nb_thread_; i++)
-    {
-      thread_[i].set_start( i*nb_op );
-      thread_[i].set_end( (i + 1)*nb_op );
-      if ( thread_[i].end() > nb_element_ )
-      { thread_[i].set_end( nb_element_ ); break; }
-    }
-    if ( thread_[nb_thread_-1].end() != 0 ) thread_[nb_thread_-1].set_end( nb_element_ );
-*/
     // define remaining elements
     int rm = nb_element_;
     // add the start and the end of each data block
@@ -215,18 +173,6 @@ void MultiThread::linear( void* (*run)( void*)
   else // for multi threads
   {
     // number of variables in each thread
- /*   const int nb_op = nb_element_ / nb_thread_;
-
-    // add the start and the end of each data block
-    for (int i=0; i<nb_thread_; i++)
-    {
-      thread_[i].set_start( i*nb_op + start );
-      thread_[i].set_end( (i + 1)*nb_op + start);
-      if ( thread_[i].end() > end )
-      { thread_[i].set_end( end ); break; }
-    }
-    if ( thread_[nb_thread_-1].end() != 0 ) thread_[nb_thread_-1].set_end( end );
-*/    // launch the threads
     // define remaining elements
     int rm = nb_element_;
     // add the start and the end of each data block

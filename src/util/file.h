@@ -1,6 +1,6 @@
 // Some file functions
 //
-// Copyright (c) 2015 Idiap Research Institute, http://www.idiap.ch/
+// Copyright (c) 2009 PGXIS - UMR CNRS 8524
 // Written by Rémi Lebret <remi@lebret.ch>
 //
 // This file is part of HPCA.
