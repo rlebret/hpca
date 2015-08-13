@@ -46,8 +46,9 @@ int cxt_size=5;
 int num_threads = 8; // pthreads
 float memory_limit = 4.0; // soft limit, in gigabytes, used to estimate optimal array sizes
 unsigned long long max_cooccur_size;
+int max_vocab_size = 10000;
 // variable for handling vocab
-hashtable_t *hash;
+Hashtable *hash;
 char ** tokename;
 int * tokenfound;
 
@@ -151,7 +152,7 @@ int get_vocab(){
     
     // memory allocation
     float * appearance_freq = (float*)malloc(sizeof(float)*vocab_size);
-    hash = ht_create(vocab_size);
+    hash = new Hashtable(vocab_size);
     tokename = (char**) malloc(sizeof(char*)*vocab_size);
     for (int i=0; i<vocab_size; i++) tokename[i] = (char*)malloc(MAX_TOKEN);
     tokenfound = (int*)malloc(sizeof(int)*vocab_size);
@@ -159,7 +160,7 @@ int get_vocab(){
     
     // insert statistics on vocabulary
     while(fscanf(fp, "%s %d\n", token, &freq) != EOF){
-        ht_insert(hash, token, i);
+        hash->insert(token, i);
         strcpy(tokename[i], token);
         appearance_freq[i]=(float)freq/ntoken;
         if (appearance_freq[i]>upper_bound) Cid_upper++;
@@ -249,9 +250,9 @@ void *cooccurrence( void *p ){
     
     // get start & end for this thread
     Thread* thread = (Thread*)p;
-    const int start = thread->start();
-    const int end = thread->end();
-    const int nbop = (end-start);
+    const long int start = thread->start();
+    const long int end = thread->end();
+    const long int nbyte = (end-start);
     // get output file name
     char output_file_name[MAX_FILE_NAME];
     
@@ -259,7 +260,7 @@ void *cooccurrence( void *p ){
     if (thread->id() != -1){
         thread->set();
         sprintf(output_file_name, "%s-%ld", c_output_file_name, thread->id());
-        if (verbose) fprintf(stderr, "create pthread n°%ld, reading lines %d to %d\n",thread->id(), start+1, end);
+        if (verbose) fprintf(stderr, "create pthread n°%ld, reading from position %ld to %ld\n",thread->id(), start, end-1);
     }else{
         strcpy(output_file_name, c_output_file_name);
     }
@@ -280,33 +281,24 @@ void *cooccurrence( void *p ){
     std::string input_file_name = std::string(c_input_file_name);
     File input_file(input_file_name);
     input_file.open();
-    input_file.jump_to_line(start);
+    input_file.jump_to_position(start);
     
     int k;
     int line_size = MAX_TOKEN_PER_LINE;
     int *tokens = (int*)malloc(line_size*sizeof(int));
-    char delim = ' ';
+    char word[MAX_TOKEN];
+    long int position=input_file.position();
     // read and store tokens
-    char *line = NULL;
-    int itr=0;
-    for (int i=start; i<end; i++){
+    while (position<end){
         k=0;
-        // get the line
-        line = input_file.getline();
-        char *olds = line;
-        char olddelim = delim;
-        while(olddelim && *line) {
-            while(*line && (delim != *line)) line++;
-            *line ^= olddelim = *line; // olddelim = *line; *line = 0;
-            tokens[k++] = ht_get(hash, olds);
+        // get next word
+        while (input_file.getword(word)){
+            tokens[k++] = hash->get(word);
             if(k>=line_size) {
                 line_size *= 2;
                 tokens = (int*)realloc(tokens, sizeof(int) * line_size);
             }
-            *line++ ^= olddelim; // *line = olddelim; line++;
-            olds = line;
         }
-
         // store token with context
         for (int j=0; j<k; j++){
             if (tokens[j]<Wid){
@@ -321,9 +313,9 @@ void *cooccurrence( void *p ){
                 }
             }
         }
-
-        // display progress bar 
-        if (verbose) loadbar(thread->id(), ++itr, nbop);
+        
+        position = input_file.position();
+        if (verbose) loadbar(thread->id(), (position-start), nbyte);
     }
     qsort(data, data_itr, sizeof(cooccur_t), compare);
     write(data,data_itr,ftmp);
@@ -357,20 +349,21 @@ int run(){
     // get vocabulary from file
     get_vocab();
     
-    // open input file
+    // define input file
     std::string input_file_name = std::string(c_input_file_name);
     File input_file(input_file_name);
-    int nbline = input_file.number_of_line();
-    if (nbline==0){
-        std::string error_msg = std::string("Data file ")
-        + input_file_name
-        + std::string(" is empty !!!\n");
-        throw std::runtime_error(error_msg);
-    }
-    if (verbose) fprintf(stderr, "number of lines in %s = %d\n",c_input_file_name,nbline);
     
-    MultiThread threads( num_threads, 1, true, nbline, NULL, NULL);
-    threads.linear( cooccurrence );
+    // get input file byte size
+    long int fsize = input_file.size();
+    if (verbose){
+        fprintf(stderr, "number of byte in %s = %ld\n",c_input_file_name,fsize);
+        fflush(stderr);
+    }
+    
+    // get optimal number of threads
+    MultiThread threads( num_threads, 1, true, fsize, NULL, NULL);
+    input_file.split(threads.nb_thread());
+    threads.linear( cooccurrence, input_file.flines );
     
     if (threads.nb_thread()>1){
        merge_files(threads.nb_thread(), -1);
@@ -380,7 +373,6 @@ int run(){
     write_vocab();
     
     // free
-    free(hash);
     free(tokenfound);
     for (int i=0; i<vocab_size; i++) free(tokename[i]);
     free(tokename);
@@ -399,7 +391,7 @@ int main(int argc, char **argv) {
         printf("Author: Remi Lebret (remi@lebret.ch)\n\n");
         printf("Usage options:\n");
         printf("\t-verbose <int>\n");
-        printf("\t\tSet verbosity: 0 or 1 (default)\n");
+        printf("\t\tSet verbosity: 0=off or 1=on (default)\n");
         printf("\t-input-file <file>\n");
         printf("\t\tInput file containing the tokenized and cleaned corpus text.\n");
         printf("\t-vocab-file <file>\n");
@@ -413,7 +405,7 @@ int main(int argc, char **argv) {
         printf("\t-lower-bound <float>\n");
         printf("\tDiscarding words from the context vocabulary with a lower appearance frequency (default is 0.00001)\n");
         printf("\t-cxt-size <int>\n");
-        printf("\tSymmetric context size around words(default is 5)\n");
+        printf("\tSymmetric context size around words (default is 5)\n");
         printf("\t-dyn-cxt <int>\n");
         printf("\t\tDynamic context window, i.e. weighting by distance form the focus word: 0=off (default), 1=on\n");
         printf("\t-memory <float>\n");

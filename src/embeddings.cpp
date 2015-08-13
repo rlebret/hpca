@@ -134,7 +134,7 @@ int main(int argc, char **argv) {
         printf("Author: Remi Lebret (remi@lebret.ch)\n\n");
         printf("Usage options:\n");
         printf("\t-verbose <int>\n");
-        printf("\t\tSet verbosity: 0 or 1 (default)\n");
+        printf("\t\tSet verbosity: 0=off or 1=on (default)\n");
         printf("\t-input-dir <dir>\n");
         printf("\t\tDirectory where to find files from the SVD\n");
         printf("\t-output-name <string>\n");
@@ -144,7 +144,7 @@ int main(int argc, char **argv) {
         printf("\t-dim <int>\n");
         printf("\t\tWord vector dimension; default 100\n");
         printf("\t-norm <int>\n");
-        printf("\t\tAre vectors normalized to unit length? 0 or 1 (default is 0)\n");
+        printf("\t\tAre vectors normalized to unit length? 0=off or 1=on (default is 0)\n");
         printf("\nExample usage:\n");
         printf("./embeddings -input-dir path_to_svd_files -output-name words.txt -eig 0.0 -dim 100 -norm 0\n\n");
         return 0;

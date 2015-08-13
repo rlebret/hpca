@@ -50,6 +50,10 @@ class File
   public:
     /**< file name */
     std::string file_name;
+    /**< file byte size */
+    long int fsize;
+    /**< pointer to lines */
+    long int * flines;
     /**< file stream */
     FILE* os;
     /**< file stream with compression */
@@ -69,6 +73,7 @@ class File
         , bool const compression=false
         )
         : file_name(name)
+        , fsize(0)
         , os(0), gzos(0)
         , zip(compression)
     {}
@@ -104,12 +109,26 @@ class File
      *  @return boolean - true if gzipped, false otherwise.
      */
     bool gzip();
+    
+    /**
+     *  @brief Return file byte size ?
+     *
+     *  @return the byte size
+     */
+    long int size();
 
     /**
      * 	@brief Skip the header
      */
     void skip_header();
-
+    
+    /** 
+      * @brief Split file into n parts
+      *
+      * @param npart number of parts
+     **/
+    void split(const int npart);
+    
     /**
      * 	@brief Count the number of lines into the file
      *
@@ -133,6 +152,20 @@ class File
      * 	@param n the number of lines to jump
      */
     void jump_to_line( const int n );
+    
+    /**
+     * 	@brief Return the current position in file
+     *
+     * 	@return the current position in stream
+     */
+    long int const position();
+    
+    /**
+     * 	@brief Jump the @a n position of file.
+     *
+     * 	@param n the position to jump
+     */
+    void jump_to_position( const long int n );
 
     /**
      * 	@brief Check whether a file is readable.
@@ -153,6 +186,14 @@ class File
      *  @brief Return next line in stream
      */
     char * getline();
+
+    /**
+     *  @brief Return next word in stream
+     *
+     *  @param word where to store next word
+     *  @return 0 if end of line, 1 otherwise
+     */
+    int getword(char * word);
 
     /**
      *  @brief Flush a stream

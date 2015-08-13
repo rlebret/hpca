@@ -57,7 +57,7 @@ bool File::gzip()
 {
   FILE * stream;
   // open file
-  stream = fopen ( file_name.c_str(), "r" );
+  stream = fopen ( file_name.c_str(), "rb" );
   // get the first two bytes
   int byte1, byte2;
   byte1 = fgetc(stream);
@@ -66,6 +66,41 @@ bool File::gzip()
   fclose(stream);
   return ( (byte1 == 0x1f) && (byte2 == 0x8b) );
 }
+
+/** Return file byte size ?
+ **/
+long int File::size()
+{
+    if (fsize == 0){ // size never been computed before
+        FILE * fin = fopen(file_name.c_str(),"rb");
+        if (fin == NULL){
+            std::string error_msg = std::string("Data file ")
+            + file_name
+            + std::string(" opening error !!!\n");
+            throw std::runtime_error(error_msg);
+        }
+        if (gzip()){
+            fseek(fin, -4, SEEK_END);
+            int b4 = fgetc(fin);
+            int b3 = fgetc(fin);
+            int b2 = fgetc(fin);
+            int b1 = fgetc(fin);
+            fsize = (b1 << 24) | (b2 << 16) + (b3 << 8) + b4;
+        }else{
+            fseek(fin, 0, SEEK_END);
+            fsize=ftell(fin);
+        }
+        fclose(fin);
+        if (fsize == 0){
+            std::string error_msg = std::string("Data file ")
+            + file_name
+            + std::string(" is empty !!!\n");
+            throw std::runtime_error(error_msg);
+        }
+    }
+    return fsize;
+}
+
 
 /** file opening
  **/
@@ -86,7 +121,7 @@ void File::open( std::string mode )
     }
     else
     {
-      if ((os = fopen(file_name.c_str(), "r")) == NULL)
+      if ((os = fopen(file_name.c_str(), "rb")) == NULL)
       {
         std::string error_msg = std::string("Data file ")
                               + file_name
@@ -120,6 +155,7 @@ void File::open( std::string mode )
     }
   }
 }
+
 
 /** file closing
  **/
@@ -166,6 +202,35 @@ void File::skip_header()
   free(line);
 }
 
+/** split file into n parts
+ **/
+void File::split(const int npart){
+    const long int sp = fsize/npart;
+    // allocation
+    flines = (long int*)malloc(sizeof(long int)*npart+1);
+    flines[0] = 0; // set start
+    flines[npart]=fsize; // set end
+    if (npart>1){
+        // open file
+        open();
+        // get the split
+        if ( zip ){
+            for(int i=1;i<npart; i++){
+                gzseek(gzos, i*sp, SEEK_SET);
+                get_next_gzline(gzos);
+                flines[i] = gztell(gzos);
+            }
+        }else{
+            for(int i=1;i<npart; i++){
+                fseek(os, i*sp, SEEK_SET);
+                get_next_line(os);
+                flines[i] = ftell(os);
+            }
+        }
+        close();
+    }
+}
+
 /** get the number of line
  **/
 int File::number_of_line()
@@ -182,6 +247,7 @@ int File::number_of_line()
   // return the number of lines
   return n;
 }
+
 /** get the number of columns
  **/
 int File::number_of_column(const char delim, bool const header){
@@ -199,6 +265,7 @@ int File::number_of_column(const char delim, bool const header){
         *line++ ^= olddelim; // *line = olddelim; line++;
         olds = line;
     }
+    close();
     return counter;
 
 }
@@ -223,6 +290,25 @@ void File::jump_to_line( const int n )
      throw std::runtime_error(error_msg);
    }
  }
+}
+
+long int const File::position(){
+    if (zip) {
+        return gztell(gzos);
+    }else{
+        return ftell(os);
+    }
+}
+
+/** Jump the given position of file
+ **/
+void File::jump_to_position( const long int n )
+{
+    if (zip){
+        gzseek(gzos, n, SEEK_SET);
+    }else{
+        fseek(os, n, SEEK_SET);
+    }
 }
 
 /** Check whether the file is readable
@@ -267,4 +353,13 @@ char * File::getline()
 {
   if ( os ) return get_next_line( os );
   else return get_next_gzline( gzos );
+}
+
+
+/** Return next word in stream
+ **/
+int File::getword(char * word)
+{
+  if ( os ) return get_next_word( word, os );
+  else return get_next_gzword( word, gzos );
 }

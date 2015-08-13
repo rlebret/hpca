@@ -35,69 +35,22 @@
 int verbose = true; // true or false
 int num_threads = 8; // pthreads
 char *c_input_file_name, *c_vocab_file_name;
-
-
-/* struct for storing vocabulary */
-typedef struct vocabulary {
-    char *word;
-    long long count;
-} Vocab;
-
-/* Efficient string comparison */
-int scmp( char *s1, char *s2 ) {
-    while(*s1 != '\0' && *s1 == *s2) {s1++; s2++;}
-    return(*s1 - *s2);
-}
-
-/* Vocab frequency comparison; no tie-breaker */
-int compare_vocab(const void *a, const void *b) {
-    long long c;
-    if( (c = ((Vocab *) b)->count - ((Vocab *) a)->count) != 0) return ( c > 0 ? 1 : -1 );
-    else return 0;
-}
-
+int max_vocab_size = 10000;
 
 /**
  * Write out vocabulary file
  **/
-int writevocab(std::string output_file_name, hashtable_t *hash){
+int writevocab(std::string output_file_name, Hashtable *hash){
     
     if (verbose) fprintf(stderr, "Writing vocabulary file in %s\n", output_file_name.c_str());
-    // get from hash table to vocabulary
-    int vocab_size = 12500;
-    long long j=0;
-    Vocab *vocab =  (Vocab*)malloc(sizeof(Vocab) * vocab_size);
-    entry_t *htmp;
+   
+    // sorting
+    hash->sort();
+
+    // writing
+    hash->print(output_file_name.c_str());
     
-    for(int i = 0; i < TSIZE; i++) { // Migrate vocab to array
-        htmp = hash->table[i];
-        while (htmp != NULL) {
-            vocab[j].word = htmp->key;
-            vocab[j].count = htmp->value;
-            j++;
-            if(j>=vocab_size) {
-                vocab_size += 2500;
-                vocab = (Vocab *)realloc(vocab, sizeof(Vocab) * vocab_size);
-            }
-            htmp = htmp->next;
-        }
-    }
-    if(verbose) fprintf(stderr,"Counted %lld unique words.\n", j);
-    // Ordering words in descending order
-    qsort(vocab, j, sizeof(Vocab), compare_vocab);
-    
-    // write out vocabulary file
-    File output_file(output_file_name);
-    output_file.open("w");
-    char buffer[MAX_TOKEN+10];
-    for (int k=0; k<j; k++){
-        sprintf(buffer, "%s %lld\n",vocab[k].word, vocab[k].count);
-        output_file.write(buffer);
-    }
-    output_file.close();
-    
-    // release memory
-    free(vocab);
+    if(verbose) fprintf(stderr,"Counted %ld unique words.\n", hash->size());
     
     return 0;
 }
@@ -109,9 +62,9 @@ void *getvocab( void *p ){
     
     // get start & end for this thread
     Thread* thread = (Thread*)p;
-    const int start = thread->start();
-    const int end = thread->end();
-    const int nbop = (end-start);
+    const long int start = thread->start();
+    const long int end = thread->end();
+    const long int nbyte = (end-start);
     // get output file name
     std::string output_file_name = std::string(c_vocab_file_name);
     
@@ -120,37 +73,34 @@ void *getvocab( void *p ){
         thread->set();
         output_file_name += "-" + typeToString(thread->id());
         if (verbose){
-            fprintf(stderr,"create pthread n°%ld, reading lines %d to %d\n",thread->id(), start+1, end);
+            fprintf(stderr,"create pthread n°%ld, reading from position %ld to %ld\n",thread->id(), start, end-1);
         }
     }
     
     // create vocab
-    hashtable_t *hash = ht_create(TSIZE);
+    Hashtable hash(max_vocab_size);
     // open input file
     std::string input_file_name = std::string(c_input_file_name);
     File input_file(input_file_name);
     input_file.open();
-    input_file.jump_to_line(start);
+    input_file.jump_to_position(start);
     
     long long ntokens=0;
-    char delim = ' ';
     // read and store tokens
-    char *line = NULL;
-    int itr=0;
-    for (int i=start; i<end; i++){
-        // get the line
-        line = input_file.getline();
-        char *olds = line;
-        char olddelim = delim;
-        while(olddelim && *line) {
-            while(*line && (delim != *line)) line++;
-            *line ^= olddelim = *line; // olddelim = *line; *line = 0;
-            ht_insert( hash, olds);
-            ntokens++;
-            *line++ ^= olddelim; // *line = olddelim; line++;
-            olds = line;
+    char word[MAX_TOKEN];
+    long int position=input_file.position();
+    int ht_idx;
+    while ( position<end ){
+        // get next word
+        while (input_file.getword(word)){
+            if ( (ht_idx = hash.get(word)) == -1 ){ // get hashing index
+                ht_idx = hash.insert(word); // new word to add
+            }
+            hash.increment(ht_idx); // increment counters
+            ++ntokens;
         }
-        if (verbose) loadbar(thread->id(), ++itr, nbop);
+        position = input_file.position();
+        if (verbose) loadbar(thread->id(), (position-start), nbyte);
     }
     // closing input file
     input_file.close();
@@ -161,17 +111,13 @@ void *getvocab( void *p ){
         // increment total number of tokens
         (*ptr_ntokens) += ntokens;
         // write hash table
-        ht_print(output_file_name.c_str(), hash);    
-        // release hash table
-        ht_delete(hash);
+        hash.print(output_file_name.c_str());
         // existing pthread
         pthread_exit( (void*)thread->id() );
     }else{
         if (verbose) fprintf(stderr, "\ndone after reading %lld tokens.\n", ntokens);
         // write out
-        writevocab(output_file_name, hash);
-        // release hash table
-        ht_delete(hash);
+        writevocab(output_file_name, &hash);
     }
     return 0;
 }
@@ -183,7 +129,7 @@ int merge(const int nthreads){
     // get output file name
     std::string output_file_name = std::string(c_vocab_file_name);
     // create vocab
-    hashtable_t *hash = ht_create(TSIZE);
+    Hashtable hash(max_vocab_size);
     
     char token[MAX_TOKEN];
     int freq;
@@ -199,7 +145,7 @@ int merge(const int nthreads){
             throw std::runtime_error(error_msg);
         }
         while(fscanf(fp, "%s %d\n", token, &freq) != EOF){
-            ht_insert( hash, token, freq);
+            hash.insert(token, freq);
         }
         fclose(fp);
         if( remove(temp_hash_file ) != 0 ){
@@ -210,11 +156,8 @@ int merge(const int nthreads){
         }
     }
     // write out
-    writevocab( output_file_name, hash );
-    
-    // release hash table
-    ht_delete(hash);
-    
+    writevocab( output_file_name, &hash );
+
     return 0;
 }
 
@@ -222,21 +165,21 @@ int merge(const int nthreads){
  * Run with multithreading
  **/
 int run() {
-
-    long long ntokens=0;
+    // define input file
     std::string input_file_name = std::string(c_input_file_name);
     File input_file(input_file_name);
-    int nbline = input_file.number_of_line();
-    if (nbline==0){
-        std::string error_msg = std::string("Data file ")
-        + input_file_name
-        + std::string(" is empty !!!\n");
-        throw std::runtime_error(error_msg);
-    }
-    if (verbose) fprintf(stderr, "number of lines in %s = %d\n",c_input_file_name,nbline);
     
-    MultiThread threads( num_threads, 1, true, nbline, NULL, &ntokens);
-    threads.linear( getvocab );
+    // get input file byte size
+    long int fsize = input_file.size();
+    if (verbose) fprintf(stderr, "number of byte in %s = %ld\n",c_input_file_name,fsize);
+    
+    // initialize number of tokens counter
+    long long ntokens=0;
+    
+    // get optimal number of threads
+    MultiThread threads( num_threads, 1, true, fsize, NULL, &ntokens);
+    input_file.split(threads.nb_thread());    
+    threads.linear( getvocab, input_file.flines );
     
    if (threads.nb_thread()>1){
        if (verbose) fprintf(stderr, "\ndone after reading %lld tokens.\n", ntokens);
@@ -257,7 +200,7 @@ int main(int argc, char **argv) {
         printf("Author: Remi Lebret (remi@lebret.ch)\n\n");
         printf("Usage options:\n");
         printf("\t-verbose <int>\n");
-        printf("\t\tSet verbosity: 0 or 1 (default)\n");
+        printf("\t\tSet verbosity: 0=off or 1=on (default)\n");
         printf("\t-input-file <file>\n");
         printf("\t\tInput file from which to extract the vocabulary\n");
         printf("\t-vocab-file <file>\n");
@@ -274,7 +217,7 @@ int main(int argc, char **argv) {
     if ((i = find_arg((char *)"-input-file", argc, argv)) > 0) strcpy(c_input_file_name, argv[i + 1]);
     if ((i = find_arg((char *)"-vocab-file", argc, argv)) > 0) strcpy(c_vocab_file_name, argv[i + 1]);
     else strcpy(c_vocab_file_name, (char *)"vocab.txt");
-
+    
     run();
     
     // free

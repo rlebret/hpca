@@ -53,9 +53,9 @@ class Thread
 {
   private:
     /**< first index */
-    int start_;
+    long int start_;
     /**< last index */
-    int end_;
+    long int end_;
 
   public:
     /**< identifier */
@@ -91,7 +91,7 @@ class Thread
      *
      *  @return the starting point
      */
-    inline const int start() const
+    inline const long int start() const
     { return start_; }
 
     /**
@@ -101,7 +101,7 @@ class Thread
      *
      *  @return the ending point
      */
-    inline const int end() const
+    inline const long int end() const
     { return end_; }
 
     /**
@@ -120,7 +120,7 @@ class Thread
      *
      *  @param start the starting point
      */
-    inline void set_start( int start )
+    inline void set_start( long int start )
     { start_ = start; }
 
     /**
@@ -130,7 +130,7 @@ class Thread
      *
      *  @param end the ending point
      */
-    inline void set_end( int end )
+    inline void set_end( long int end )
     { end_ = end; }
 
     /**
@@ -250,10 +250,9 @@ class MultiThread
      *  in multithreading with pre-defined starting & ending values
      *
      *  @param run the function to run within the threads
-     *  @param start the starting value
-     *  @param end the ending value
+     *  @param boundaries the starting/ending values
      */
-    void linear( void* (*run)(void*), const int start, const int end );
+    void linear( void* (*run)(void*), const long int * boundaries );
 };
 
 /** @} */

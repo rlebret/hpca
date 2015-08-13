@@ -127,7 +127,7 @@ int main(int argc, char **argv) {
         printf("Author: Remi Lebret (remi@lebret.ch)\n\n");
         printf("Usage options:\n");
         printf("\t-verbose <int>\n");
-        printf("\t\tSet verbosity: 0 or 1 (default)\n");
+        printf("\t\tSet verbosity: 0=off or 1=on (default)\n");
         printf("\t-input-dir <dir>\n");
         printf("\t\tDirectory where to find cooccurrence.bin file\n");
         printf("\t-rank <int>\n");

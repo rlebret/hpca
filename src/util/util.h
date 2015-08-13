@@ -89,6 +89,25 @@ char * get_next_line( FILE * stream );
 char * get_next_gzline ( gzFile stream );
 
 /**
+ * 	@brief Read a word in a file
+ *
+ * 	@param stream the output stream
+ *  @param word where to store the output word
+ *  @return 0 if end of line, 1 otherwise
+ */
+int get_next_word( char * word, FILE * stream );
+
+/**
+ *  @brief Read a word in a gzip file
+ *
+ *  @param stream the output stream
+ *  @param word where to store the output word
+ *  @return 0 if end of line, 1 otherwise
+ */
+int get_next_gzword ( char * word, gzFile stream );
+
+
+/**
  *  @brief Lowercase a line
  *
  *  @param p the input line
@@ -156,7 +175,7 @@ int find_arg(char *str, int argc, char **argv);
  *  @param n total number of operation
  *  @param w width of the progress bar
  */
-void loadbar(int thread_id, unsigned int x, unsigned int n, unsigned int w = 50);
+void loadbar(long int const thread_id, long int const x, long int const n, unsigned int const w = 50);
 
 /** @} */
 

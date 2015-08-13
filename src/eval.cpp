@@ -55,7 +55,7 @@
 int verbose=true;
 char *c_word_file_name, *c_vocab_file_name, *c_output_file_name;
 // variable for handling vocab
-hashtable_t * hash;
+Hashtable * hash;
 int vocab_size;
 
 template<typename T>
@@ -129,13 +129,13 @@ void getvocab(){
     File fp(c_vocab_file_name);
     vocab_size = fp.number_of_line();
     // create vocab
-    hash = ht_create(vocab_size);
+    hash = new Hashtable(vocab_size);
     // get vocabulary
     fp.open();
     char * line = NULL;
     int i=0;
     while ((line = fp.getline()) != NULL) {
-        ht_insert(hash, line, i++);
+        hash->insert(line, i++);
     }
     fp.close();
     if (verbose) fprintf(stderr, "number of words in vocabulary = %d\n",vocab_size);
@@ -179,7 +179,7 @@ void runsimilarity( const Eigen::MatrixXf& words
     std::vector<float> gold;
     while ((buffer = string_copy(buffer, ptr_data, &itr, '\n')) != '\0') {
         sscanf(buffer, "%s\t%s\t%f", token1, token2, &coeff);
-        if ( ((i = ht_get(hash, token1))) && ((j = ht_get(hash, token2))) ){
+        if ( ((i = hash->get(token1))) && ((j = hash->get(token2))) ){
             idx1.push_back(i);
             idx2.push_back(j);
             gold.push_back(coeff);
@@ -259,10 +259,10 @@ float const runanalogy( const Eigen::MatrixXf& words
     std::vector<int> a,b,c,d,idx;
     while ((buffer = string_copy(buffer, ptr_data, &itr, '\n')) != '\0') {
         sscanf(buffer, "%s %s %s %s", token1, token2, token3, token4);
-        if (   ((i = ht_get(hash, token1)))
-            && ((j = ht_get(hash, token2)))
-            && ((k = ht_get(hash, token3)))
-            && ((l = ht_get(hash, token4)))  ){
+        if (   ((i = hash->get(token1)))
+            && ((j = hash->get(token2)))
+            && ((k = hash->get(token3)))
+            && ((l = hash->get(token4)))  ){
             a.push_back(i);
             b.push_back(j);
             c.push_back(k);
@@ -340,21 +340,21 @@ int main(int argc, char **argv) {
         printf("Author: Remi Lebret (remi@lebret.ch)\n\n");
         printf("Usage options:\n");
         printf("\t-verbose <int>\n");
-        printf("\t\tSet verbosity: 0 or 1 (default)\n");
+        printf("\t\tSet verbosity: 0=off or 1=on (default)\n");
         printf("\t-word-file <file>\n");
         printf("\t\tFile containing word embeddings to evaluate\n");
         printf("\t-vocab-file <file>\n");
         printf("\t\tFile containing word vocabulary\n");
         printf("\t-ws353 <int>\n");
-        printf("\t\tDo WordSim-353 evaluation: 0 or 1 (default)\n");
+        printf("\t\tDo WordSim-353 evaluation: 0=off or 1=on (default)\n");
         printf("\t-rg65 <int>\n");
-        printf("\t\tDo Rubenstein and Goodenough 1965 evaluation: 0 or 1 (default)\n");
+        printf("\t\tDo Rubenstein and Goodenough 1965 evaluation: 0=off or 1=on (default)\n");
         printf("\t-rw <int>\n");
-        printf("\t\tDo Stanford Rare Word evaluation: 0 or 1 (default)\n");
+        printf("\t\tDo Stanford Rare Word evaluation: 0=off or 1=on (default)\n");
         printf("\t-syn <int>\n");
-        printf("\t\tDo Microsoft Research Syntactic Analogies: 0 or 1 (default)\n");
+        printf("\t\tDo Microsoft Research Syntactic Analogies: 0=off or 1=on (default)\n");
         printf("\t-sem <int>\n");
-        printf("\t\tDo Google Semantic Analogies: 0 or 1 (default)\n");
+        printf("\t\tDo Google Semantic Analogies: 0=off or 1=on (default)\n");
         printf("\nExample usage:\n");
         printf("./eval -input-file path_to_words -vocab-file path_to_vocab -ws353 1 -rg65 1 -rw 1 -syn 0 -sem 0\n\n");
         return 0;
@@ -461,6 +461,4 @@ int main(int argc, char **argv) {
         
         if (verbose) fprintf(stderr,"\nSemantic accuracy = %.4f\n", acc/5);
     }
-    // release memory
-    ht_delete(hash);
 }

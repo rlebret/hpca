@@ -305,6 +305,53 @@ char * get_next_gzline ( gzFile stream )
    return line;
 }
 
+// Reads a single word from a file, assuming space + tab + EOL to be word boundaries
+int get_next_word(char *word, FILE *stream) {
+  int a = 0, ch;
+  while (!feof(stream)) {
+    ch = fgetc(stream);
+    if (ch == 13) continue;
+    if ((ch == ' ') || (ch == '\t') || (ch == '\n')) {
+      if (a > 0) {
+        if (ch == '\n') ungetc(ch, stream);
+        break;
+      }
+      if (ch == '\n') {
+        return 0;
+      } else continue;
+    }
+    word[a] = ch;
+    a++;
+    if (a >= MAX_TOKEN - 1) a--;   // Truncate too long words
+  }
+  word[a] = 0;
+  return 1;
+}
+
+// Reads a single word from a file, assuming space + tab + EOL to be word boundaries
+int get_next_gzword(char *word, gzFile stream) {
+  int a = 0, ch;
+  while ((ch = gzgetc(stream)) != -1) {
+    
+    if (ch == 13) continue;
+    if ((ch == ' ') || (ch == '\t') || (ch == '\n')) {
+      if (a > 0) {
+        if (ch == '\n') gzungetc(ch, stream);
+        break;
+      }
+      if (ch == '\n') {
+        strcpy(word, (char *)"</s>");
+        return 0;
+      } else continue;
+    }
+    word[a] = ch;
+    a++;
+    if (a >= MAX_TOKEN - 1) a--;   // Truncate too long words
+  }
+  word[a] = 0;
+  return 1;
+}
+
 
 /* Lowercase a given line */
 int lowercase(char *p) {
@@ -415,7 +462,7 @@ int find_arg(char *str, int argc, char **argv) {
 }
 
 // Display a progress bar
-void loadbar(int thread_id, unsigned int x, unsigned int n, unsigned int w)
+void loadbar(long int const thread_id, long int const x, long int const n, unsigned int const w)
 {
     if ( (x != n) && (x % (n/100+1) != 0) ) return;
  
@@ -425,7 +472,7 @@ void loadbar(int thread_id, unsigned int x, unsigned int n, unsigned int w)
     if (thread_id==-1)
       fprintf(stderr, "%02d%% [", (int)(ratio*100));
     else
-      fprintf(stderr, "pthread n°%02d -- %02d%% [", thread_id, (int)(ratio*100));
+      fprintf(stderr, "pthread n°%02ld -- %02d%% [", thread_id, (int)(ratio*100));
     
     for (int x=0; x<c; x++) fprintf(stderr,"=");
     for (int x=c; x<w; x++) fprintf(stderr," ");

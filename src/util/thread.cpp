@@ -90,16 +90,7 @@ MultiThread::MultiThread( const int n_thread
 /** release memory
  **/
 MultiThread::~MultiThread()
-{
-#ifdef VERBOSE
-  printf("MultiThread::delete()\n");
-#endif
-  // release Threads
-  if ( thread_ ) delete[] thread_;
-#ifdef VERBOSE
-  printf("end MultiThread::delete()\n");
-#endif
-}
+{}
 
 /** launch threads
  **/
@@ -159,29 +150,22 @@ void MultiThread::linear( void* (*run)( void*) )
  *  with pre-defined starting & ending values
  **/
 void MultiThread::linear( void* (*run)( void*)
-                        , const int start
-                        , const int end
-                        )
+                        , const long int* boundaries )
 {
   // for unique thread
   if (nb_thread_ == 1 )
   {
-    thread_[0].set_start(start);
-    thread_[0].set_end(end);
+    thread_[0].set_start(boundaries[0]);
+    thread_[0].set_end(boundaries[1]);
     (*run)(&thread_[0]);
   }
   else // for multi threads
   {
-    // number of variables in each thread
-    // define remaining elements
-    int rm = nb_element_;
     // add the start and the end of each data block
     for (int i=0; i<nb_thread_; i++)
     {
-      thread_[i].set_end( rm+start );
-      rm -= floor( rm / (nb_thread_-i) );
-      thread_[i].set_start( rm+start );
-      if (  rm==0 ) break;
+      thread_[i].set_start(boundaries[i] );
+      thread_[i].set_end( boundaries[i+1] );
     }
     launch( run );
   }

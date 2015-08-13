@@ -34,7 +34,7 @@ int verbose = true; // true or false
 int lower = true; // true or false
 int digit = true; // true or false
 int num_threads = 8; // pthreads
-int zip = true; // compress in gzip
+int zip = false; // compress in gzip
 char *c_input_file_name, *c_output_file_name;
 
 
@@ -45,9 +45,9 @@ void *preprocess( void *p )
 {
     // get start & end for this thread
     Thread* thread = (Thread*)p;
-    const int start = thread->start();
-    const int end = thread->end();
-    const int nbop = (end-start);
+    const long int start = thread->start();
+    const long int end = thread->end();
+    const long int nbyte = (end-start);
     // get output file name
     std::string output_file_name = std::string(c_output_file_name);
     
@@ -55,7 +55,7 @@ void *preprocess( void *p )
     if (thread->id() != -1){
         thread->set();
         output_file_name += "-" + typeToString(thread->id());
-        if (verbose) fprintf(stderr, "create pthread n°%ld, reading lines %d to %d\n",thread->id(), start+1, end);
+        if (verbose) fprintf(stderr, "create pthread n°%ld, reading from position %ld to %ld\n",thread->id(), start, end-1);
     }  
     
     // create output file
@@ -66,12 +66,12 @@ void *preprocess( void *p )
     std::string input_file_name = std::string(c_input_file_name);
     File input_file(input_file_name);
     input_file.open();
-    input_file.jump_to_line(start);
+    input_file.jump_to_position(start);
     
     char *line = NULL;
-    int itr=0;
-    for (int i=start; i<end; i++){
-        
+    long int position=input_file.position();
+    while ( position<end ){
+       
         // get the line
         line = input_file.getline();
        
@@ -85,8 +85,9 @@ void *preprocess( void *p )
         output_file.write(line);
         output_file.write("\n");
         
+        position = input_file.position();
         // display progress bar 
-        if (verbose) loadbar(thread->id(), ++itr, nbop);
+        if (verbose) loadbar(thread->id(), (position-start), nbyte);
     }
     // close output file
     output_file.close();
@@ -102,20 +103,37 @@ void *preprocess( void *p )
 
 int merge(const int nthreads){
     
-    if (verbose) fprintf(stderr, "\nmerging files\n");
+    if (verbose){ fprintf(stderr, "\nmerging files\n"); fflush(stderr);}
     
     std::string output_file_name = std::string(c_output_file_name);
     std::string combined_file_name = output_file_name;
-    if (zip) combined_file_name += ".gz";
-    std::ofstream combined_file( combined_file_name.c_str(), std::ofstream::out ) ;
-    for (int i=nthreads-1; i>=0; i--){
-        std::string thread_file_name = output_file_name + "-" + typeToString(i);
-        if (zip) thread_file_name += ".gz";
-        std::ifstream file(thread_file_name.c_str()) ;
-        combined_file << file.rdbuf();
-        std::remove(thread_file_name.c_str());
+    if (zip){
+        File fout(combined_file_name, true);
+        fout.open("w");
+        char *line=NULL;
+        for (int i=0; i<nthreads; i++){
+            std::string thread_file_name = output_file_name + "-" + typeToString(i);
+            File fin(thread_file_name+".gz", true) ;
+            fin.open();
+            while( (line=fin.getline()) != NULL){
+                fout.write(line);
+                fout.write("\n");
+            }
+            fin.close();
+            std::remove(thread_file_name.c_str());
+        }
+        fout.close();
+    }else{
+        std::ofstream combined_file( combined_file_name.c_str(), std::ofstream::out ) ;
+        for (int i=0; i<nthreads; i++){
+            std::string thread_file_name = output_file_name + "-" + typeToString(i);
+            std::ifstream file(thread_file_name.c_str()) ;
+            combined_file << file.rdbuf();
+            std::remove(thread_file_name.c_str());
+        }
+        combined_file.close();
+        
     }
-    combined_file.close();
     
     return 0;
 }
@@ -125,19 +143,17 @@ int merge(const int nthreads){
  **/
 int run() {
     
+    // define input file
     std::string input_file_name = std::string(c_input_file_name);
     File input_file(input_file_name);
-    int nbline = input_file.number_of_line();
-    if (nbline==0){
-        std::string error_msg = std::string("Data file ")
-        + input_file_name
-        + std::string(" is empty !!!\n");
-        throw std::runtime_error(error_msg);
-    }
-    if (verbose) fprintf(stderr, "number of lines in %s = %d\n",c_input_file_name,nbline);
     
-    MultiThread threads( num_threads, 1, true, nbline, NULL, NULL);
-    threads.linear( preprocess );
+    // get input file byte size
+    long int fsize = input_file.size();
+    if (verbose) fprintf(stderr, "number of byte in %s = %ld\n",c_input_file_name,fsize);
+    
+    MultiThread threads( num_threads, 1, true, fsize, NULL, NULL);
+    input_file.split(threads.nb_thread());
+    threads.linear( preprocess, input_file.flines );
     
     if (threads.nb_thread()>1){
         merge(threads.nb_thread());
@@ -156,17 +172,17 @@ int main(int argc, char **argv) {
         printf("Author: Remi Lebret (remi@lebret.ch)\n\n");
         printf("Usage options:\n");
         printf("\t-verbose <int>\n");
-        printf("\t\tSet verbosity: 0 or 1 (default)\n");
+        printf("\t\tSet verbosity: 0=off or 1=on (default)\n");
         printf("\t-input-file <file>\n");
         printf("\t\tInput file to preprocess\n");
         printf("\t-output-file <file>\n");
         printf("\t\tOutput file to save preprocessed data\n");
         printf("\t-gzip <int>\n");
-        printf("\t\tSave in gzip format? 0 or 1 (default)\n");
+        printf("\t\tSave in gzip format? 0=off (default) or 1=on\n");
         printf("\t-lower <int>\n");
-        printf("\t\tLowercased? 0 or 1 (default)\n");
+        printf("\t\tLowercased? 0=off or 1=on (default)\n");
         printf("\t-digit <int>\n");
-        printf("\t\tReplace all digits with a special token? 0, 1 (default)\n");
+        printf("\t\tReplace all digits with a special token? 0=off or 1=on (default)\n");
         printf("\t-threads <int>\n");
         printf("\t\tNumber of threads; default 8\n");
         printf("\nExample usage:\n");

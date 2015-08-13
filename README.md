@@ -55,7 +55,7 @@ java -cp stanford-parser.jar edu.stanford.nlp.process.PTBTokenizer -preserveLine
 * `-digit <int>`: Replace all digits with a special token? 0, 1 (default)
 * `-input-file <file>`: Input file to preprocess (gzip format is allowed)
 * `-output-file <file>`: Output file to save preprocessed data
-* `-gzip <int>`: Save in gzip format? 0 or 1 (default)
+* `-gzip <int>`: Save in gzip format? 0 (default) or 1
 * `-threads <int>`: Number of threads; default 8
 * `-verbose <int>`: Set verbosity: 0 or 1 (default)
 
