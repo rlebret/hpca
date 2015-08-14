@@ -36,7 +36,7 @@ int dyn_cxt = false; // true or false
 int min_freq = 100; // keep words appearing at least min_freq times
 char *c_input_file_name, *c_vocab_file_name, *c_output_dir_name, *c_output_file_name;
 int vocab_size=0;
-long ntoken=0;
+long int ntoken=0;
 float upper_bound=1.0;
 float lower_bound=0.00001;
 int Wid=0;
@@ -117,23 +117,23 @@ int merge_files(const int num, const int thread_id) {
         : sprintf(tmp_output_file_name,"%s_%04d.bin",c_output_file_name, i);
         remove(tmp_output_file_name);
     }
+    
+    // release memory
+    free(pq);
+    free(fid);
+    
     return 0;
 }
 
 /* load vocabulary */
 int get_vocab(){
     
-    FILE *fp;
-    fp = fopen(c_vocab_file_name, "r");
     char token[MAX_TOKEN];
     int freq;
     int i=0;
     
-    if(fp == NULL){
-        fprintf(stderr, "cannot open file %s\n\n",c_vocab_file_name);
-        return 1;
-    }
-    
+    // open vocabulary file
+    FILE *fp = fopen(c_vocab_file_name, "r");
     // get statistics on vocabulary
     while(fscanf(fp, "%s %d\n", token, &freq) != EOF){
         if (freq>=min_freq) Wid++;
@@ -141,39 +141,37 @@ int get_vocab(){
         ntoken+=freq;
     }
     
-    if (verbose){
-        fprintf(stderr, "number of unique tokens                             = %d\n",vocab_size);
-        fprintf(stderr, "total number of tokens in file                      = %ld\n",ntoken);
-        fprintf(stderr, "number of tokens to keep (>=%-4d)                   = %d\n",min_freq, Wid);
+    if (verbose){ // print out some statistics
+        fprintf(stderr, "number of unique tokens                       = %d\n",vocab_size);
+        fprintf(stderr, "total number of tokens in file                = %ld\n",ntoken);
+        fprintf(stderr, "number of tokens to keep (>=%4d)             = %d\n",min_freq, Wid);
     }
     
     // get back at the beginning of the file
     fseek(fp, 0, SEEK_SET);
     
     // memory allocation
-    float * appearance_freq = (float*)malloc(sizeof(float)*vocab_size);
+    float appearance_freq;
+    const float ratio = 1.0/ntoken;
     hash = new Hashtable(vocab_size);
     tokename = (char**) malloc(sizeof(char*)*vocab_size);
-    for (int i=0; i<vocab_size; i++) tokename[i] = (char*)malloc(MAX_TOKEN);
     tokenfound = (int*)malloc(sizeof(int)*vocab_size);
     for (int i=0; i<vocab_size; i++) tokenfound[i]=false;
     
     // insert statistics on vocabulary
     while(fscanf(fp, "%s %d\n", token, &freq) != EOF){
         hash->insert(token, i);
+        tokename[i] = (char*)malloc(strlen(token)+1);
         strcpy(tokename[i], token);
-        appearance_freq[i]=(float)freq/ntoken;
-        if (appearance_freq[i]>upper_bound) Cid_upper++;
-        if (appearance_freq[i]>=lower_bound) Cid_lower++;
+        appearance_freq=freq*ratio;
+        if (appearance_freq>upper_bound) Cid_upper++;
+        if (appearance_freq>=lower_bound) Cid_lower++;
         i++;
     }
     
-    if (verbose) fprintf(stderr, "context vocabulary size [%e,%e] = %d\n",upper_bound, lower_bound, Cid_lower-Cid_upper);
+    if (verbose) fprintf(stderr, "context vocabulary size [%.3e,%.3e] = %d\n",upper_bound, lower_bound, Cid_lower-Cid_upper);
     
     fclose(fp);
-    
-    // free memory
-    free(appearance_freq);
     
     return 0;
 }
@@ -205,6 +203,10 @@ void write_vocab(){
     //closing files
     fclose(fw);
     fclose(fc);
+    
+    // release memory
+    free(c_output_word_name);
+    free(c_output_context_name);
 }
 
 /* add context */
@@ -381,6 +383,7 @@ int run(){
     free(tokenfound);
     for (int i=0; i<vocab_size; i++) free(tokename[i]);
     free(tokename);
+    free(hash);
     
     return 0;
 }
@@ -442,6 +445,8 @@ int main(int argc, char **argv) {
     
     /* check whether input file exists */
     is_file(c_input_file_name);
+    /* check whether vocab file exists */
+    is_file(c_vocab_file_name);
     
     /* Estimate the maximum size for storing cooccurence data in struct */
     max_cooccur_size = (unsigned long long) (0.85 * memory_limit * GIGAOCTET/(sizeof(cooccur_t)) / num_threads);

@@ -51,13 +51,13 @@ java -cp stanford-parser.jar edu.stanford.nlp.process.PTBTokenizer -preserveLine
 ```
 
 `preprocess` options:
-* `-lower <int>`: Lowercased? 0 or 1 (default)
-* `-digit <int>`: Replace all digits with a special token? 0, 1 (default)
+* `-lower <int>`: Lowercased? 0=off or 1=on (default)
+* `-digit <int>`: Replace all digits with a special token? 0=off or 1=on (default)
 * `-input-file <file>`: Input file to preprocess (gzip format is allowed)
 * `-output-file <file>`: Output file to save preprocessed data
-* `-gzip <int>`: Save in gzip format? 0 (default) or 1
+* `-gzip <int>`: Save in gzip format? 0=off (default) or 1=on
 * `-threads <int>`: Number of threads; default 8
-* `-verbose <int>`: Set verbosity: 0 or 1 (default)
+* `-verbose <int>`: Set verbosity: 0=off or 1=on (default)
 
 **Example**:
 ```
@@ -72,7 +72,7 @@ Extracting words with their respective frequency.
 * `-input-file <file>`: Input file from which to extract the vocabulary (gzip format is allowed)
 * `-vocab-file <file>`: Output file to save the vocabulary
 * `-threads <int>`: Number of threads; default 8
-* `-verbose <int>`: Set verbosity: 0 or 1 (default)
+* `-verbose <int>`: Set verbosity:  0=off or 1=on (default)
 
 **Example**:
 ```
@@ -92,10 +92,10 @@ The user should supply a vocabulary file, as produced by `vocab`.
 * `-upper-bound <float>`: Discarding words from the context vocabulary with a upper appearance frequency (default is 1.0)
 * `-lower-bound <float>`: Discarding words from the context vocabulary with a lower appearance frequency (default is 0.00001)
 * `-cxt-size <int>`: Symmetric context size around words(default is 5)
-* `-dyn-cxt <int>`: Dynamic context window, i.e. weighting by distance form the focus word: 0=off (default), 1=on
+* `-dyn-cxt <int>`: Dynamic context window, i.e. weighting by distance form the focus word: 0=off (default) or 1=on
 * `-memory <float>`: Soft limit for memory consumption in GB; default 4.0
 * `-threads <int>`: Number of threads; default 8
-* `-verbose <int>`: Set verbosity: 0 or 1 (default)
+* `-verbose <int>`: Set verbosity:  0=off or 1=on (default)
 
 **Example**:
 ```
@@ -124,7 +124,7 @@ This tool uses the external [redsvd](https://code.google.com/p/redsvd/) library,
 * `-input-dir <dir>`: Directory where to find the `cooccurrence.bin` file
 * `-rank <int>`: Number of components to keep; default 300
 * `-threads <int>`: Number of threads; default 8
-* `-verbose <int>`: Set verbosity: 0 or 1 (default)
+* `-verbose <int>`: Set verbosity: 0=off or 1=on (default)
 
 **Example**:
 ```
@@ -147,7 +147,7 @@ The user should supply the directory where files produced by `pca` are.
 * `-output-name <string>`: Filename for embeddings file which will be placed in <dir> (default is words.txt)
 * `-dim <int>`: Word vector dimension; default 100
 * `-eig <float>`: Eigenvalue weighting (0.0, 0.5 or 1.0); default is 0.0
-* `-norm <int>`: Are vectors normalized to unit length? 0 or 1 (default is 0)
+* `-norm <int>`: Are vectors normalized to unit length? 0=off (default) or 1=on
 
 **Example**:
 ```
@@ -168,12 +168,12 @@ It contains the following evaluation datasets:
 `eval` options:
 * `-input-file <file>`: File containing word embeddings to evaluate
 * `-vocab-file <file>`: File containing word vocabulary
-* `-ws353 <int>`: Do WordSim-353 evaluation: 0 or 1 (default)
-* `-rg65 <int>`: Do Rubenstein and Goodenough 1965 evaluation: 0 or 1 (default)
-* `-rw <int>`: Do Stanford Rare Word evaluation: 0 or 1 (default)
-* `-syn <int>`: Do Microsoft Research Syntactic Analogies: 0 or 1 (default)
-* `-sem <int>`: Do Google Semantic Analogies: 0 or 1 (default)
-* `-verbose <int>`: Set verbosity: 0 or 1 (default)
+* `-ws353 <int>`: Do WordSim-353 evaluation: 0=off or 1=on (default)
+* `-rg65 <int>`: Do Rubenstein and Goodenough 1965 evaluation: 0=off or 1=on (default)
+* `-rw <int>`: Do Stanford Rare Word evaluation: 0=off or 1=on (default)
+* `-syn <int>`: Do Microsoft Research Syntactic Analogies: 0=off or 1=on (default)
+* `-sem <int>`: Do Google Semantic Analogies: 0=off or 1=on (default)
+* `-verbose <int>`: Set verbosity: 0=off or 1=on (default)
 
 **Example**:
 ```
