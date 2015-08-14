@@ -172,10 +172,9 @@ int find_arg(char *str, int argc, char **argv);
  *
  *  @param thread_id the thread id
  *  @param x the current status
- *  @param n total number of operation
  *  @param w width of the progress bar
  */
-void loadbar(long int const thread_id, long int const x, long int const n, unsigned int const w = 50);
+void loadbar(long int const thread_id, unsigned int const x, unsigned int n, unsigned int const w = 50);
 
 /** @} */
 

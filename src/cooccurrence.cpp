@@ -252,7 +252,7 @@ void *cooccurrence( void *p ){
     Thread* thread = (Thread*)p;
     const long int start = thread->start();
     const long int end = thread->end();
-    const long int nbyte = (end-start);
+    const long int nbop = (end-start)/100;
     // get output file name
     char output_file_name[MAX_FILE_NAME];
     
@@ -283,11 +283,12 @@ void *cooccurrence( void *p ){
     input_file.open();
     input_file.jump_to_position(start);
     
-    int k;
+    int k, itr=0;
     int line_size = MAX_TOKEN_PER_LINE;
     int *tokens = (int*)malloc(line_size*sizeof(int));
     char word[MAX_TOKEN];
     long int position=input_file.position();
+    if (verbose) loadbar(thread->id(), itr, 100);
     // read and store tokens
     while (position<end){
         k=0;
@@ -313,10 +314,14 @@ void *cooccurrence( void *p ){
                 }
             }
         }
-        
+        // get current position in stream
         position = input_file.position();
-        if (verbose) loadbar(thread->id(), (position-start), nbyte);
+        if (verbose){
+            if ( position-(start+(itr*nbop)) > nbop)
+                loadbar(thread->id(), ++itr, 100);
+        }
     }
+    if (verbose) loadbar(thread->id(), 100, 100);
     qsort(data, data_itr, sizeof(cooccur_t), compare);
     write(data,data_itr,ftmp);
     fclose(ftmp);

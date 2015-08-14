@@ -64,7 +64,7 @@ void *getvocab( void *p ){
     Thread* thread = (Thread*)p;
     const long int start = thread->start();
     const long int end = thread->end();
-    const long int nbyte = (end-start);
+    const long int nbop = (end-start)/100;
     // get output file name
     std::string output_file_name = std::string(c_vocab_file_name);
     
@@ -89,7 +89,8 @@ void *getvocab( void *p ){
     // read and store tokens
     char word[MAX_TOKEN];
     long int position=input_file.position();
-    int ht_idx;
+    int ht_idx,itr=0;
+    if (verbose) loadbar(thread->id(), itr, 100);
     while ( position<end ){
         // get next word
         while (input_file.getword(word)){
@@ -99,9 +100,14 @@ void *getvocab( void *p ){
             hash.increment(ht_idx); // increment counters
             ++ntokens;
         }
+        // get current position in stream
         position = input_file.position();
-        if (verbose) loadbar(thread->id(), (position-start), nbyte);
+        if (verbose){
+            if ( position-(start+(itr*nbop)) > nbop)
+                loadbar(thread->id(), ++itr, 100);
+        }
     }
+    if (verbose) loadbar(thread->id(), 100, 100);
     // closing input file
     input_file.close();
 

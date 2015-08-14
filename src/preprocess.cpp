@@ -47,7 +47,7 @@ void *preprocess( void *p )
     Thread* thread = (Thread*)p;
     const long int start = thread->start();
     const long int end = thread->end();
-    const long int nbyte = (end-start);
+    const long int nbop = (end-start)/100;
     // get output file name
     std::string output_file_name = std::string(c_output_file_name);
     
@@ -70,6 +70,8 @@ void *preprocess( void *p )
     
     char *line = NULL;
     long int position=input_file.position();
+    int itr=0;
+    if (verbose) loadbar(thread->id(), itr, 100);
     while ( position<end ){
        
         // get the line
@@ -85,10 +87,15 @@ void *preprocess( void *p )
         output_file.write(line);
         output_file.write("\n");
         
+        // get current position in stream
         position = input_file.position();
-        // display progress bar 
-        if (verbose) loadbar(thread->id(), (position-start), nbyte);
+        // display progress bar
+        if (verbose){
+            if ( position-(start+(itr*nbop)) > nbop)
+                loadbar(thread->id(), ++itr, 100);
+        }
     }
+    if (verbose) loadbar(thread->id(), 100, 100);
     // close output file
     output_file.close();
     // close input file

@@ -62,6 +62,9 @@
 
 #define EPSILON 0.001
 
+/* macros for octet */
+#define KILOOCTET 1024
+#define MEGAOCTET 1048576
 #define GIGAOCTET 1073741824
 
 /** @} */
