@@ -19,6 +19,7 @@
 
 
 #include <vector>
+#include <stdexcept>
 #include <algorithm>
 #include <cfloat>
 #include <iostream>
