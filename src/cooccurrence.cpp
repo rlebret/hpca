@@ -51,34 +51,38 @@ int max_vocab_size = 10000;
 Hashtable *hash;
 char ** tokename;
 int * tokenfound;
+int * nfile;
 
 /* Merge [num] sorted files of cooccurrence records */
-int merge_files(const int num, const int thread_id) {
-    int i, size;
+int merge_files(const int nbthread) {
+    int i=0, size;
     long long counter = 0;
     cooccur_id_t *pq, new_id, old_id;
     
+    // get total number of files
+    int num=0;
+    for (int f=0; f<nbthread; f++) num += nfile[f];
     char tmp_output_file_name[MAX_FILE_NAME];
     FILE **fid = (FILE**)malloc(sizeof(FILE*) * num);
     pq = (cooccur_id_t*)malloc(sizeof(cooccur_id_t) * num);
     
     // define final output file
-    (thread_id!=-1)
-    ? sprintf(tmp_output_file_name,"%s_%04d.bin",c_output_file_name, thread_id)
-    : sprintf(tmp_output_file_name,"%s.bin",c_output_file_name);
+    sprintf(tmp_output_file_name,"%s.bin",c_output_file_name);
     FILE *fout = fopen(tmp_output_file_name,"wb");;
-    if (verbose && thread_id==-1)  fprintf(stderr,"\n\033[0Gmerging cooccurrence files: processed 0 cooccurrences.");
+    if (verbose)  fprintf(stderr,"\n\033[0Gmerging %3d cooccurrence files: processed 0 cooccurrences.", num);
 
     /* Open all files and add first entry of each to priority queue */
-    for(i = 0; i < num; i++) {
-        (thread_id!=-1)
-        ? sprintf(tmp_output_file_name,"%s-%d_%04d.bin",c_output_file_name, thread_id, i)
-        : sprintf(tmp_output_file_name,"%s_%04d.bin",c_output_file_name, i);
-        fid[i] = fopen(tmp_output_file_name,"rb");
-        if(fid[i] == NULL) {fprintf(stderr, "Unable to open file %s.\n",tmp_output_file_name); return 1;}
-        fread(&new_id, sizeof(cooccur_t), 1, fid[i]);
-        new_id.id = i;
-        insert_pq(pq,new_id,i+1);
+    for (int f=0; f<nbthread; f++){
+        const int nf = nfile[f];
+        for(int k= 0; k < nf; k++) {
+            // get temporary file name
+            sprintf(tmp_output_file_name,"%s-%d_%04d.bin",c_output_file_name, f, k);
+            fid[i] = fopen(tmp_output_file_name,"rb");
+            if(fid[i] == NULL) {fprintf(stderr, "Unable to open file %s.\n",tmp_output_file_name); return 1;}
+            fread(&new_id, sizeof(cooccur_t), 1, fid[i]);
+            new_id.id = i;
+            insert_pq(pq,new_id,i++);
+        }
     }
     
     /* Pop top node, save it in old to see if the next entry is a duplicate */
@@ -95,8 +99,9 @@ int merge_files(const int num, const int thread_id) {
     
     /* Repeatedly pop top node and fill priority queue until files have reached EOF */
     while(size > 0) {
+        if (!tokenfound[old_id.idx1]) tokenfound[old_id.idx1]=true; // set this token has found
         counter += merge_write(pq[0], &old_id, fout); // Only count the lines written to file, not duplicates
-        if((counter%100000) == 0) if(verbose && thread_id==-1) fprintf(stderr,"\033[39G%lld cooccurrences.",counter);
+        if((counter%100000) == 0) if(verbose) fprintf(stderr,"\033[42G%lld cooccurrences.",counter);
         i = pq[0].id;
         delete_pq(pq, size);
         fread(&new_id, sizeof(cooccur_t), 1, fid[i]);
@@ -104,21 +109,20 @@ int merge_files(const int num, const int thread_id) {
         else {
             new_id.id = i;
             insert_pq(pq, new_id, size);
-            if (thread_id==-1){// set this token has found in target vocabulary
-                if (!tokenfound[new_id.idx1]) tokenfound[new_id.idx1]=true; // set this token has found
-            }
         }
     }
     fwrite(&old_id, sizeof(cooccur_t), 1, fout);
-    if (verbose && thread_id==-1){
-        fprintf(stderr,"\033[0Gmerging cooccurrence files: processed %lld cooccurrences.\n",++counter);
+    if (verbose){
+        fprintf(stderr,"\033[0Gmerging %3d cooccurrence files: processed %lld cooccurrences.\n",num, ++counter);
         fprintf(stderr,"done, all cooccurrences saved in file %s.bin.\n", c_output_file_name);
-    }  
-    for(i=0;i<num;i++) {
-        (thread_id!=-1)
-        ? sprintf(tmp_output_file_name,"%s-%d_%04d.bin",c_output_file_name, thread_id, i)
-        : sprintf(tmp_output_file_name,"%s_%04d.bin",c_output_file_name, i);
-        //remove(tmp_output_file_name);
+    }
+    // removing temporary files
+    for (int f=0; f<nbthread; f++){
+        const int nf = nfile[f];
+        for(int k= 0; k < nf; k++) {
+            sprintf(tmp_output_file_name,"%s-%d_%04d.bin",c_output_file_name, f, k);
+            remove(tmp_output_file_name);
+        }
     }
     
     // release memory
@@ -263,7 +267,7 @@ void *cooccurrence( void *p ){
         sprintf(output_file_name, "%s-%ld", c_output_file_name, thread->id());
         if (verbose) fprintf(stderr, "create pthread n°%ld, reading from position %ld to %ld\n",thread->id(), start, end-1);
     }else{
-        strcpy(output_file_name, c_output_file_name);
+        sprintf(output_file_name, "%s-%ld", c_output_file_name, 0);
     }
     
     // create output file
@@ -334,13 +338,13 @@ void *cooccurrence( void *p ){
     free(data);
     free(tokens);
     
-    // merge cooccurence files
-    merge_files(ftmp_itr+1, thread->id());
-    
     // exit thread
     if ( thread->id()!= -1 ){
+        nfile[thread->id()]=ftmp_itr+1;
         // existing pthread
         pthread_exit( (void*)thread->id() );
+    }else{
+        nfile[0]=ftmp_itr+1;
     }
     
     return 0;
@@ -372,19 +376,21 @@ int run(){
     // set max size for storing cooccurence
     const float current_memory = (float)get_available_memory()/GIGAOCTET;
     if (memory_limit>current_memory) memory_limit = current_memory;
-    max_cooccur_size = (unsigned long long) (0.85 * current_memory * GIGAOCTET/(sizeof(cooccur_t)) / threads.nb_thread());
+    max_cooccur_size = (unsigned long long) (0.7 * memory_limit * GIGAOCTET/(sizeof(cooccur_t)) / threads.nb_thread());
+    // set number of file per thread
+    nfile = (int*)calloc(threads.nb_thread(), sizeof(int));
+    
     // launch threads
     threads.linear( cooccurrence, input_file.flines );
     
     // merge temporary files
-    if (threads.nb_thread()>1){
-       merge_files(threads.nb_thread(), -1);
-    } 
+    merge_files(threads.nb_thread());
     
     // write vocabularies
     write_vocab();
     
     // free
+    free(nfile);
     free(tokenfound);
     for (int i=0; i<vocab_size; i++) free(tokename[i]);
     free(tokename);
