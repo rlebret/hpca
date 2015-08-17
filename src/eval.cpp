@@ -84,7 +84,7 @@ void readMatrix(const char *filename, Eigen::MatrixXf& result)
     const int rows = matfile.number_of_line();
     /* check whether number of lines in words is equal to the number of words into vocab file */
     if (rows != vocab_size){
-        throw std::string("Size mismatch between words and vocabulary files!!!\n");
+        throw std::runtime_error("Size mismatch between words and vocabulary files!!!\n");
     }
     // get number of rows from file
     const int cols = matfile.number_of_column(' ');
@@ -126,16 +126,16 @@ float cossim(const Eigen::VectorXf& a, const Eigen::VectorXf& b){
 /* load vocabulary */
 void getvocab(){
     
-    File fp(c_vocab_file_name);
+    File fp((std::string(c_vocab_file_name)));
     vocab_size = fp.number_of_line();
     // create vocab
     hash = new Hashtable(vocab_size);
-    // get vocabulary
+    // open file
     fp.open();
+    // get vocabulary
     char * line = NULL;
-    int i=0;
-    while ((line = fp.getline()) != NULL) {
-        hash->insert(line, i++);
+    while( (line=fp.getline()) != NULL) {
+        hash->insert(line);
     }
     fp.close();
     if (verbose) fprintf(stderr, "number of words in vocabulary = %d\n",vocab_size);

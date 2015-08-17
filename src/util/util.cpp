@@ -27,12 +27,14 @@ extern "C"
 #include <string.h>
 #include <ctype.h>
 #include <sys/stat.h>   // For stat().
-#ifdef __APPLE__
-#include <sys/mount.h>
-#include <mach/vm_statistics.h>
-#include <mach/mach_types.h> 
-#include <mach/mach_init.h>
-#include <mach/mach_host.h>
+#if defined(_WIN32)
+  #include <Windows.h>
+#elif __APPLE__
+  #include <sys/mount.h>
+  #include <mach/vm_statistics.h>
+  #include <mach/mach_types.h>
+  #include <mach/mach_init.h>
+  #include <mach/mach_host.h>
 #else
   #include <sys/types.h>  // For stat().
   #include <sys/sysinfo.h>
@@ -73,18 +75,36 @@ bool is_file(const char * path){
 // get total memory
 const unsigned long long int get_total_memory()
 {
-#ifdef __APPLE__
+#if defined(_WIN32) && (defined(__CYGWIN__) || defined(__CYGWIN32__))
+/* Cygwin under Windows. ------------------------------------ */
+/* New 64-bit MEMORYSTATUSEX isn't available.  Use old 32.bit */
+    MEMORYSTATUS status;
+    status.dwLength = sizeof(status);
+    GlobalMemoryStatus( &status );
+    return (size_t)status.dwTotalPhys;
+    
+#elif defined(_WIN32)
+    /* Windows. ------------------------------------------------- */
+    /* Use new 64-bit MEMORYSTATUSEX, not old 32-bit MEMORYSTATUS */
+    MEMORYSTATUSEX status;
+    status.dwLength = sizeof(status);
+    GlobalMemoryStatusEx( &status );
+    return (size_t)status.ullTotalPhys;
+
+#elif __APPLE__
     struct statfs stats;
     if (statfs("/", &stats))
     {  perror("sysinfo()"); exit(1); }
     
     return (uint64_t)stats.f_bsize * stats.f_bfree;
+    
 #elif __linux
     struct sysinfo the_info;
     if(sysinfo(&the_info))
     {  perror("sysinfo()"); exit(1); }
     
     return the_info.totalram;
+    
 #else
     // 2GB -1
     return 2147483647;
@@ -106,10 +126,26 @@ const unsigned long long int get_total_swap()
 #endif
 }
 
-#ifdef __APPLE__
 // get the memory available
 unsigned long long int get_available_memory()
 {
+#if defined(_WIN32) && (defined(__CYGWIN__) || defined(__CYGWIN32__))
+    /* Cygwin under Windows. ------------------------------------ */
+    /* New 64-bit MEMORYSTATUSEX isn't available.  Use old 32.bit */
+    MEMORYSTATUS status;
+    status.dwLength = sizeof(status);
+    GlobalMemoryStatus( &status );
+    return (size_t)status.dwAvailPhys;
+    
+#elif defined(_WIN32)
+    /* Windows. ------------------------------------------------- */
+    /* Use new 64-bit MEMORYSTATUSEX, not old 32-bit MEMORYSTATUS */
+    MEMORYSTATUSEX status;
+    status.dwLength = sizeof(status);
+    GlobalMemoryStatusEx( &status );
+    return (size_t)status.ullAvailPhys;
+    
+#elif __APPLE__
     vm_size_t page_size;
     mach_port_t mach_port;
     mach_msg_type_number_t count;
@@ -121,14 +157,11 @@ unsigned long long int get_available_memory()
         KERN_SUCCESS == host_statistics(mach_port, HOST_VM_INFO, 
                                         (host_info_t)&vm_stats, &count))
     {
-        return (int64_t)vm_stats.free_count * (int64_t)page_size; 
+        return (int64_t)vm_stats.free_count + (int64_t)vm_stats.inactive_count * (int64_t)page_size;
     }
     else { throw std::runtime_error("Can't get available memory\n");  }
-}
+    
 #elif __linux
-// get the memory available
-unsigned long long int get_available_memory()
-{
     std::string  data_line;
     size_t found;
     long int availmem=0;
@@ -181,43 +214,16 @@ unsigned long long int get_available_memory()
     // check whether the keyword is found
     if (mem_stream.eof()) throw std::runtime_error("Cached not found in file /proc/meminfo \n");
     
-    // add swap space if required in constants.h
-#ifdef USE_SWAP
-    // Parameter page research
-    while (getline(mem_stream, data_line))
-    {
-        // remove space characters from parameter
-        if ( data_line.find("SwapFree")!=std::string::npos )
-        {
-            std::istringstream tokenizer(data_line);
-            std::string token;
-            
-            getline(tokenizer, token, ':');
-            getline(tokenizer, token, 'k');
-            std::istringstream float_iss(token);
-            long int cached;
-            float_iss >> cached;
-            availmem += cached;
-            break;
-        }
-    }
-    // check whether the keyword is found
-    if (mem_stream.eof()) throw std::runtime_error("SwapFree not found in file /proc/meminfo \n");
-#endif
-    
     // file closing
     mem_stream.close();
     
     return availmem*1024;
-}
+    
 #else
-// get the memory available
-unsigned long long int get_available_memory()
-{
     // 2GB - 1
     return 2147483647;
-}
 #endif
+}
 
 // get a line in a file
 char * get_next_line (FILE * stream)

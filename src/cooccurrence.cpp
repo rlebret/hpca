@@ -104,6 +104,9 @@ int merge_files(const int num, const int thread_id) {
         else {
             new_id.id = i;
             insert_pq(pq, new_id, size);
+            if (thread_id==-1){// set this token has found in target vocabulary
+                if (!tokenfound[new_id.idx1]) tokenfound[new_id.idx1]=true; // set this token has found
+            }
         }
     }
     fwrite(&old_id, sizeof(cooccur_t), 1, fout);
@@ -115,7 +118,7 @@ int merge_files(const int num, const int thread_id) {
         (thread_id!=-1)
         ? sprintf(tmp_output_file_name,"%s-%d_%04d.bin",c_output_file_name, thread_id, i)
         : sprintf(tmp_output_file_name,"%s_%04d.bin",c_output_file_name, i);
-        remove(tmp_output_file_name);
+        //remove(tmp_output_file_name);
     }
     
     // release memory
@@ -222,13 +225,11 @@ unsigned long long getcontext(cooccur_t *data, unsigned long long itr, const int
         weight = (float)(cxt_size-(j-rightcxt)+1)/cxt_size;
         weight_itr = 1.0/cxt_size;
     }
-    int found=false;
     for (int k=rightcxt; k<leftcxt; k++){
         if (k!=j){
             const int t=tokens[k];
             // check whether this context is in our context vocabulary
             if (t>=Cid_upper && t<=Cid_lower){
-                if (!found) found=true;
                 data[itr].idx1=target;
                 data[itr].idx2=t-Cid_upper; // keep indices starting from 0
                 (dyn_cxt) ? data[itr].val=weight : data[itr].val=1.0;
@@ -238,8 +239,6 @@ unsigned long long getcontext(cooccur_t *data, unsigned long long itr, const int
         if (dyn_cxt)
             (k<j)? weight+=weight_itr : weight-=weight_itr;
     }
-    
-    if (!tokenfound[target] && found) tokenfound[target]=true; // set this token has found
     
     return itr;
 }
@@ -370,8 +369,14 @@ int run(){
     // get optimal number of threads
     MultiThread threads( num_threads, 1, true, fsize, NULL, NULL);
     input_file.split(threads.nb_thread());
+    // set max size for storing cooccurence
+    const float current_memory = (float)get_available_memory()/GIGAOCTET;
+    if (memory_limit>current_memory) memory_limit = current_memory;
+    max_cooccur_size = (unsigned long long) (0.85 * current_memory * GIGAOCTET/(sizeof(cooccur_t)) / threads.nb_thread());
+    // launch threads
     threads.linear( cooccurrence, input_file.flines );
     
+    // merge temporary files
     if (threads.nb_thread()>1){
        merge_files(threads.nb_thread(), -1);
     } 
@@ -447,10 +452,6 @@ int main(int argc, char **argv) {
     is_file(c_input_file_name);
     /* check whether vocab file exists */
     is_file(c_vocab_file_name);
-    
-    /* Estimate the maximum size for storing cooccurence data in struct */
-    max_cooccur_size = (unsigned long long) (0.85 * memory_limit * GIGAOCTET/(sizeof(cooccur_t)) / num_threads);
-    
     
     return run();
 }
