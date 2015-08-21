@@ -194,7 +194,7 @@ For a full demo example, run:
 ./demo.sh
 ```
 
-This script will download a tokenized version of the [Reuters Corpus Volume I](RCV1)(http://www.jmlr.org/papers/volume5/lewis04a/lewis04a.pdf) and compute word embeddings out of it.
+This script will download a tokenized version of the [Reuters Corpus Volume I (RCV1)](http://www.jmlr.org/papers/volume5/lewis04a/lewis04a.pdf) and compute word embeddings out of it.
 
 
 ## AUTHORS 
