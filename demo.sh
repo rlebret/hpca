@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # build and compile
-configure
+./configure
 make
 
 # get corpus online if needed
