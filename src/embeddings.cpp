@@ -21,6 +21,7 @@
 #include <stdexcept>
 
 // include utility headers
+#include "util/thread.h"
 #include "util/util.h"
 #include "util/convert.h"
 #include "util/file.h"
