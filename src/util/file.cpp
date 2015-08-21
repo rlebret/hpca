@@ -1,6 +1,6 @@
 // Some file functions
 //
-// Copyright (c) 2009 PGXIS - UMR CNRS 8524
+// Copyright (c) 2015 Idiap Research Institute, http://www.idiap.ch/
 // Written by Rémi Lebret <remi@lebret.ch>
 //
 // This file is part of HPCA.
@@ -21,6 +21,7 @@
 #include "file.h"
 #include "util.h"
 #include "convert.h"
+#include "constants.h"
 
 // C++ header
 #include <stdexcept>
@@ -29,6 +30,10 @@
 #include <cstdlib>
 #include <fstream>
 
+/** Destructor */
+File::~File() {
+  if(flines) free(flines);
+}
 
 /** Get outputs file name
  **/
@@ -188,9 +193,10 @@ void File::close()
 void File::skip_header()
 {
   // variable to store the first line
-  char *line = NULL;
-  //get the first line
-  line = getline();
+  char *line=NULL;
+  (zip) 
+  ? line=get_next_gzline(gzos) 
+  : line=get_next_line(os);
   if (line == NULL)
   {
     std::string error_msg = std::string("Data file ")
@@ -207,9 +213,10 @@ void File::skip_header()
 void File::split(const int npart){
     const long int sp = fsize/npart;
     // allocation
-    flines = (long int*)malloc(sizeof(long int)*npart+1);
+    flines = (long int*)malloc(sizeof(long int)*(npart+1));
     flines[0] = 0; // set start
     flines[npart]=fsize; // set end
+    char *line = NULL;
     if (npart>1){
         // open file
         open();
@@ -217,17 +224,20 @@ void File::split(const int npart){
         if ( zip ){
             for(int i=1;i<npart; i++){
                 gzseek(gzos, i*sp, SEEK_SET);
-                get_next_gzline(gzos);
+                line = get_next_gzline(gzos);
+                free(line);
                 flines[i] = gztell(gzos);
             }
         }else{
             for(int i=1;i<npart; i++){
                 fseek(os, i*sp, SEEK_SET);
-                get_next_line(os);
+                line = get_next_line(os);
+                free(line);
                 flines[i] = ftell(os);
             }
         }
         close();
+        
     }
 }
 
@@ -240,8 +250,9 @@ int File::number_of_line()
   int n=0;
   char* line=NULL;
   // count
-  while( (line=getline()) )
-  {  n++; free(line);  }
+  while( (line = (zip) ? get_next_gzline(gzos) : get_next_line(os)) != NULL )
+  {  n++;  free(line); }
+  
   // close file
   close();
   // return the number of lines
@@ -251,10 +262,14 @@ int File::number_of_line()
 /** get the number of columns
  **/
 int File::number_of_column(const char delim, bool const header){
-    NULL;
+    // open the file
     open();
     if (header) skip_header();
-    char *line=getline();
+    char *line=NULL;
+    (zip) 
+    ? line=get_next_gzline(gzos) 
+    : line=get_next_line(os);
+
     char *olds = line;
     char olddelim = delim;
     int counter=0;
@@ -263,8 +278,8 @@ int File::number_of_column(const char delim, bool const header){
         *line ^= olddelim = *line; // olddelim = *line; *line = 0;
         counter++;
         *line++ ^= olddelim; // *line = olddelim; line++;
-        olds = line;
     }
+    free(olds);
     close();
     return counter;
 
@@ -275,21 +290,26 @@ int File::number_of_column(const char delim, bool const header){
 void File::jump_to_line( const int n )
 {
   // initialize a counter
- int cpt=0;
- char * line=NULL;
- // jump to the first line of that thread
- while ( cpt < n )
- {
-   if ( (line=getline()) != NULL )
-   {  ++cpt; free(line);  }
-   else
-   {
-     std::string error_msg = std::string("Cannot jump to line n° ")
+  int cpt=0;
+  char * line=NULL;
+  // jump to the first line of that thread
+  while ( cpt < n )
+  {
+    (zip) 
+    ? line=get_next_gzline(gzos) 
+    : line=get_next_line(os);
+    if ( line!= NULL )
+    {  ++cpt; }
+    else
+    {
+      std::string error_msg = std::string("Cannot jump to line n° ")
                            + std::string( typeToString(n) + " - " + file_name )
                            + std::string(" has not enough lines !!!\n");
-     throw std::runtime_error(error_msg);
-   }
- }
+      throw std::runtime_error(error_msg);
+    }
+    free(line);
+  }
+ 
 }
 
 long int const File::position(){
@@ -338,11 +358,11 @@ int File::write( char const * str )
 {
    if ( os )
    {
-       fprintf(os, "%s", str);
+      fprintf(os, "%s", str);
    }
    else
    {
-     gzwrite(gzos, str,(unsigned)strlen(str));
+      gzwrite(gzos, str,(unsigned)strlen(str));
    }
    return 0;
 }
@@ -351,8 +371,10 @@ int File::write( char const * str )
  **/
 char * File::getline()
 {
-  if ( os ) return get_next_line( os );
-  else return get_next_gzline( gzos );
+  //if ( os ) return fgets(line, MAX_STRING_LENGTH, os);
+  //else return gzgets( gzos, line, MAX_STRING_LENGTH);
+  if ( os ) return get_next_line(os);
+  else return get_next_gzline(gzos);
 }
 
 

@@ -1,6 +1,6 @@
 // Some file functions
 //
-// Copyright (c) 2009 PGXIS - UMR CNRS 8524
+// Copyright (c) 2015 Idiap Research Institute, http://www.idiap.ch/
 // Written by Rémi Lebret <remi@lebret.ch>
 //
 // This file is part of HPCA.
@@ -73,7 +73,7 @@ class File
         , bool const compression=false
         )
         : file_name(name)
-        , fsize(0)
+        , fsize(0), flines(NULL)
         , os(0), gzos(0)
         , zip(compression)
     {}
@@ -83,7 +83,7 @@ class File
      *
      * 	Release a @c File.
      */
-    ~File() {}
+    ~File();
 
     /**
      * 	@brief Open the file.
@@ -184,6 +184,9 @@ class File
 
     /**
      *  @brief Return next line in stream
+     *
+     *  @param line where to store next line
+     *  @return the line
      */
     char * getline();
 

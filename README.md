@@ -107,7 +107,7 @@ cooccurrence -input-file corpus-clean.txt -vocab-file vocab.txt -output-dir path
 * `target_words.txt`: vocabulary of words from which embeddings will be generated (rows of the cooccurrence matrix)
 * `context_words.txt`: vocabulary of context words (columns of the cooccurrence matrix)
 
-## Performing Hellinger PCA
+### Performing Hellinger PCA
 
 Randomized SVD with respect to the Hellinger distance.
 The user should supply the directory where files produced by `cooccurrence` are.
@@ -137,7 +137,7 @@ pca -input-dir path_to_cooccurence_file -rank 300
 * `svd.V`: orthonomal matrix V
 
 
-## Extracting word embeddings
+### Extracting word embeddings
 
 Generating word embeddings from the Hellinger PCA.
 The user should supply the directory where files produced by `pca` are.
@@ -148,6 +148,7 @@ The user should supply the directory where files produced by `pca` are.
 * `-dim <int>`: Word vector dimension; default 100
 * `-eig <float>`: Eigenvalue weighting (0.0, 0.5 or 1.0); default is 0.0
 * `-norm <int>`: Are vectors normalized to unit length? 0=off (default) or 1=on
+* `-threads <int>`: Number of threads; default 8
 
 **Example**:
 ```
@@ -168,6 +169,8 @@ It contains the following evaluation datasets:
 `eval` options:
 * `-input-file <file>`: File containing word embeddings to evaluate
 * `-vocab-file <file>`: File containing word vocabulary
+* `-lower <int>`: Lowercased datasets? 0=off or 1=on (default)
+* `-threads <int>`: Number of threads; default 8
 * `-ws353 <int>`: Do WordSim-353 evaluation: 0=off or 1=on (default)
 * `-rg65 <int>`: Do Rubenstein and Goodenough 1965 evaluation: 0=off or 1=on (default)
 * `-rw <int>`: Do Stanford Rare Word evaluation: 0=off or 1=on (default)
@@ -181,6 +184,17 @@ eval -input-file words.txt -vocab-file target_vocab.txt -ws353 1 -rg65 1 -rw 1 -
 ```
 
 **NOTE**: To speed up the implementation of the analogies, candidate solutions come from a closed vocabulary.
+
+
+## FULL EXAMPLE
+
+For a full demo example, run:
+```
+./demo.sh
+```
+
+This script will download a tokenized version of the [Reuters Corpus Volume I](RCV1)(http://www.jmlr.org/papers/volume5/lewis04a/lewis04a.pdf) and compute word embeddings out of it.
+
 
 ## AUTHORS 
 

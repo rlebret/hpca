@@ -1,6 +1,6 @@
 // Some utilities functions
 //
-// Copyright (c) 2009 PGXIS - UMR CNRS 8524
+// Copyright (c) 2015 Idiap Research Institute, http://www.idiap.ch/
 // Written by Rémi Lebret <remi@lebret.ch>
 //
 // This file is part of HPCA.
@@ -91,8 +91,8 @@ char * get_next_gzline ( gzFile stream );
 /**
  * 	@brief Read a word in a file
  *
- * 	@param stream the output stream
  *  @param word where to store the output word
+ * 	@param stream the output stream
  *  @return 0 if end of line, 1 otherwise
  */
 int get_next_word( char * word, FILE * stream );
@@ -100,8 +100,8 @@ int get_next_word( char * word, FILE * stream );
 /**
  *  @brief Read a word in a gzip file
  *
- *  @param stream the output stream
  *  @param word where to store the output word
+ *  @param stream the output stream
  *  @return 0 if end of line, 1 otherwise
  */
 int get_next_gzword ( char * word, gzFile stream );

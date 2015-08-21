@@ -1,6 +1,6 @@
 // Some utilities functions
 //
-// Copyright (c) 2009 PGXIS - UMR CNRS 8524
+// Copyright (c) 2015 Idiap Research Institute, http://www.idiap.ch/
 // Written by Rémi Lebret <remi@lebret.ch>
 //
 // This file is part of HPCA.
@@ -65,7 +65,7 @@ bool is_directory(const char * path)
 bool is_file(const char * path){
     std::ifstream file( path );
     if(file.fail()){
-        std::string error_msg = std::string("Cannot find svd file ")
+        std::string error_msg = std::string("Cannot find file ")
         + std::string( path )
         + std::string(" !!!\n");
         throw std::runtime_error(error_msg);
@@ -381,7 +381,7 @@ int replace_digit(char* string) {
     char  *temp, *pointer, ch, *start;
     
     temp = string;
-    pointer = (char*)malloc(MAX_STRING_LENGTH);
+    pointer = (char*)malloc(strlen(string)+1);
     
     if( pointer == NULL )
     {

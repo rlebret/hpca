@@ -69,14 +69,11 @@ int run() {
         s+=data.val;
     }
     if (verbose) fprintf(stderr, "# of words:%d, # of context words:%d, # of non-zero entries:%lld\n", nrow, maxid, nonZeroNum);
-    
     // get back at the beginning of the file
     fseek(fin, 0, SEEK_SET);
     
     if (verbose) fprintf(stderr, "Storing cooccurence matrix in memory...");
 
-    // set threads
-    Eigen::setNbThreads(num_threads);
     // store cooccurence in Eigen sparse matrix object
     REDSVD::SMatrixXf A;
     A.resize(nrow, maxid+1);
@@ -154,6 +151,16 @@ int main(int argc, char **argv) {
     
     /* set the optimal number of threads */
     num_threads = MultiThread::optimal_nb_thread(num_threads, 1, num_threads);
+    // set threads
+    Eigen::setNbThreads(num_threads);
 
-    return run();
+    /* perform PCA */
+    run();
+
+    /* release memory */
+    free(c_input_dir_name);
+    free(c_output_name);
+    free(c_input_file_name);
+
+    return 0;
 }

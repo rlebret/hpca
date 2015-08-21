@@ -26,6 +26,7 @@
 
 // include utility headers
 #include "util/util.h"
+#include "util/thread.h"
 #include "util/file.h"
 #include "util/hashtable.h"
 #include "util/constants.h"
@@ -54,7 +55,9 @@
 
 // define global variables
 int verbose=true;
-char *c_word_file_name, *c_vocab_file_name, *c_output_file_name;
+int lower=true; 
+int num_threads=8;
+char *c_word_file_name, *c_vocab_file_name;
 // variable for handling vocab
 Hashtable * hash;
 int vocab_size;
@@ -69,6 +72,26 @@ class CompareIndicesByAnotherVectorValues{
 };
     
     
+std::vector<float> rank(std::vector<float>& values, std::vector<int>& indices){
+    std::vector<float> r(values.size());
+    int i=0;
+    while (1){
+        int n=0,s=0;
+        while ( (i<(r.size()-1)) && (values[indices[i]]==values[indices[i+1]]) ){
+            s += i;
+            i++; n++;
+        }
+        if ( n>0 ){ // found equal values, update rank.
+            const float newrank = (float)(s+i)/(n+1);
+            for (int j=(i-n); j<=i; j++) r[j] = newrank;
+            n=0; s=0; 
+        }else{ r[i]=i; }
+        i++;
+        if (i==r.size()) break;
+    }
+    return r;
+}
+
 std::vector<int> ordered(std::vector<float>* values) {
     std::vector<int> indices(values->size());
     for (int i = 0; i != indices.size(); ++i) indices[i] = i;
@@ -100,6 +123,7 @@ void readMatrix(const char *filename, Eigen::MatrixXf& result)
     char delim=' ';
     for (int i = 0; i < rows; i++){
         line = matfile.getline();
+        char *ptr = line;
         char *olds = line;
         char olddelim = delim;
         int j=0;
@@ -110,6 +134,7 @@ void readMatrix(const char *filename, Eigen::MatrixXf& result)
             *line++ ^= olddelim; // *line = olddelim; line++;
             olds = line;
         }
+        free(ptr);
     }
     // closing file
     matfile.close();
@@ -135,9 +160,12 @@ void getvocab(){
     fp.open();
     // get vocabulary
     char * line = NULL;
+    int i=0;
     while( (line=fp.getline()) != NULL) {
-        hash->insert(line);
+        hash->insert(line, i++);
+        free(line);
     }
+    // closing file
     fp.close();
     if (verbose) fprintf(stderr, "number of words in vocabulary = %d\n",vocab_size);
 }
@@ -158,7 +186,7 @@ float const getstd(const std::vector<float>& vec, const float mean){
     for (int i=0; i<nrow; i++)
         s += powf((vec[i]-mean), 2.0);
    
-    const float variance = s/nrow;
+    const float variance = s/(nrow-1);
     return sqrtf(variance);
 }
 
@@ -180,7 +208,12 @@ void runsimilarity( const Eigen::MatrixXf& words
     std::vector<float> gold;
     while ((buffer = string_copy(buffer, ptr_data, &itr, '\n')) != '\0') {
         sscanf(buffer, "%s\t%s\t%f", token1, token2, &coeff);
-        if ( ((i = hash->get(token1))) && ((j = hash->get(token2))) ){
+        // lowercase?
+        if (lower){
+            lowercase(token1);
+            lowercase(token2);
+        } 
+        if ( ((i = hash->value(token1))!=-1) && ((j = hash->value(token2))!=-1) ){
             idx1.push_back(i);
             idx2.push_back(j);
             gold.push_back(coeff);
@@ -191,7 +224,7 @@ void runsimilarity( const Eigen::MatrixXf& words
     free(buffer);
 
     
-    const int npairs=gold.size();
+    const long long int npairs=gold.size();
     if (verbose) fprintf(stderr, "number of pairs = %d\n",npairs);
     
     // get scores
@@ -213,7 +246,8 @@ void runsimilarity( const Eigen::MatrixXf& words
     // get gold scores
     const float  gold_mean = getmean(gold);
     const float  gold_std = getstd(gold, gold_mean);
-    
+
+    // compute correlation
     float r=0;
     for (int i=0; i<npairs; i++){
         r += (scores[i]-cossim_mean)*(gold[i]-gold_mean);
@@ -225,15 +259,18 @@ void runsimilarity( const Eigen::MatrixXf& words
     std::vector<int> cossimsortidx = ordered(&scores);
     std::vector<int> goldsortidx = ordered(&gold);
     
+    // get ranks
+    std::vector<float> cossimrank = rank(scores, cossimsortidx);
+    std::vector<float> goldrank = rank(gold, goldsortidx);
     float sum=0;
     for (int i=0; i<npairs; i++){
         const int idx = cossimsortidx[i];
         int j=0;
         while (goldsortidx[j] != idx) j++;
-        const int s = i-j;
+        const float s = cossimrank[i]-goldrank[j];
         sum += s*s;
     }
-    const float p = 1-((6*sum)/(npairs*(npairs*npairs-1)));
+    const float p = 1-(6*sum)/(npairs*(npairs*npairs-1));
     
     if (verbose){
         fprintf(stderr, "Pearson's correlation = %f\n",r);
@@ -259,11 +296,19 @@ float const runanalogy( const Eigen::MatrixXf& words
     
     std::vector<int> a,b,c,d,idx;
     while ((buffer = string_copy(buffer, ptr_data, &itr, '\n')) != '\0') {
-        sscanf(buffer, "%s %s %s %s", token1, token2, token3, token4);
-        if (   ((i = hash->get(token1)))
-            && ((j = hash->get(token2)))
-            && ((k = hash->get(token3)))
-            && ((l = hash->get(token4)))  ){
+        sscanf(buffer, "%s %s %s %s", token1, token2, token3, token4);        
+        // lowercase?
+        if (lower){
+            lowercase(token1);
+            lowercase(token2);
+            lowercase(token3);
+            lowercase(token4);
+        } 
+        if (   ((i = hash->value(token1))!=-1)
+            && ((j = hash->value(token2))!=-1)
+            && ((k = hash->value(token3))!=-1)
+            && ((l = hash->value(token4))!=-1)  
+            ){
             a.push_back(i);
             b.push_back(j);
             c.push_back(k);
@@ -292,30 +337,37 @@ float const runanalogy( const Eigen::MatrixXf& words
     // define vector to store distances
     std::vector<float> distances(nword);
     
-    int acc=0;
-    // loop over examples
+    // define temp matrices
+    Eigen::MatrixXf A(words.cols(),n);
+    Eigen::MatrixXf B(words.cols(),n);
+    Eigen::MatrixXf C(words.cols(),n);
+    Eigen::MatrixXf D(nword,words.cols());
+    // initialize A, B and C matrices
     for (int i=0; i<n; i++){
-      
-        // compute prediction
-        Eigen::VectorXf y = words.row(b[i]) - words.row(a[i]) + words.row(c[i]);
-        
-        // initialize distances with dummy values
-        std::fill(distances.begin(), distances.end(), FLT_MAX);
-        
-        // prepare stuff for cosine similary
-        const float len = y.dot(y);
-        y/=sqrtf(len);
-            
-        // loop over all words
-        for (int j=0; j<nword; j++){
-            // get distance
-            const int curridx = idx[j];
-            if ( (curridx!=a[i]) && (curridx!=b[i]) && (curridx!=c[i]))
-                distances[j]=words.row(curridx).dot(y);
+        A.col(i) = words.row(a[i]);
+        B.col(i) = words.row(b[i]);
+        C.col(i) = words.row(c[i]);
+    }
+    // initialize D matrix
+    for (int i=0; i<nword; i++) D.row(i) = words.row(idx[i]);
+
+    // cosine similarity
+    Eigen::MatrixXf y = D * (B - A + C);
+    
+    // get accuracy
+    int acc=0;    
+    // loop over all words
+    for (int j=0; j<n; j++){
+        float maxval=0;
+        int maxidx;
+        for (int i=0; i<nword; i++){
+            const int curridx =idx[i];
+            if ( (y(i,j)>maxval) && (curridx!=a[j]) && (curridx!=b[j]) && (curridx!=c[j])){
+                maxval = y(i,j);
+                maxidx=curridx;
+            }
         }
-        // ordered
-        std::vector<int> sortidx = ordered(&distances);
-        if (sortidx[sortidx.size()-1]==d[i]) acc++;
+        if ( maxidx == d[j] ) acc++;
     }
     const float final_acc = (float)acc/n;
     if (verbose) fprintf(stderr,"accuracy = %.4f\n", final_acc);
@@ -356,6 +408,10 @@ int main(int argc, char **argv) {
         printf("\t\tDo Microsoft Research Syntactic Analogies: 0=off or 1=on (default)\n");
         printf("\t-sem <int>\n");
         printf("\t\tDo Google Semantic Analogies: 0=off or 1=on (default)\n");
+        printf("\t-lower <int>\n");
+        printf("\t\tLowercased datasets? 0=off or 1=on (default)\n");
+        printf("\t-threads <int>\n");
+        printf("\t\tNumber of threads; default 8\n");
         printf("\nExample usage:\n");
         printf("./eval -input-file path_to_words -vocab-file path_to_vocab -ws353 1 -rg65 1 -rw 1 -syn 0 -sem 0\n\n");
         return 0;
@@ -369,6 +425,15 @@ int main(int argc, char **argv) {
     if ((i = find_arg((char *)"-sem", argc, argv)) > 0) sem = atof(argv[i + 1]);
     if ((i = find_arg((char *)"-word-file", argc, argv)) > 0) strcpy(c_word_file_name, argv[i + 1]);
     if ((i = find_arg((char *)"-vocab-file", argc, argv)) > 0) strcpy(c_vocab_file_name, argv[i + 1]);
+    if ((i = find_arg((char *)"-lower", argc, argv)) > 0) lower = atoi(argv[i + 1]);
+    if ((i = find_arg((char *)"-threads", argc, argv)) > 0) num_threads = atoi(argv[i + 1]);
+    
+
+    /* set the optimal number of threads */
+    num_threads = MultiThread::optimal_nb_thread(num_threads, 1, num_threads);
+    // set threads
+    Eigen::setNbThreads(num_threads);
+
     
     /* check whether files exist */
     is_file(c_word_file_name);
@@ -408,9 +473,7 @@ int main(int argc, char **argv) {
         runsimilarity( words, rareword_txt, rareword_txt_len);
     }
     if (syn || sem){ // prepare stuff for cosine similary
-        Eigen::VectorXf rownorm = words.rowwise().norm();
-        for (int i=0; i<words.rows(); i++)
-            words.row(i)*=1.0/rownorm(i);
+        words.rowwise().normalize();
     }
     if (syn){
         if (verbose){
@@ -453,13 +516,20 @@ int main(int argc, char **argv) {
         acc += runanalogy( words, question_capital_common_countries_txt, question_capital_common_countries_txt_len );
         if (verbose) fprintf(stderr,"---- capital-world analogies ----\n");
         acc += runanalogy( words, question_capital_world_txt, question_capital_world_txt_len );
-        if (verbose) fprintf(stderr,"---- city-in-stateanalogies ----\n");
+        if (verbose) fprintf(stderr,"---- city-in-state analogies ----\n");
         acc += runanalogy( words, question_city_in_state_txt, question_city_in_state_txt_len );
-        if (verbose) fprintf(stderr,"---- currency.txtanalogies ----\n");
+        if (verbose) fprintf(stderr,"---- currency analogies ----\n");
         acc += runanalogy( words, question_currency_txt, question_currency_txt_len );
         if (verbose) fprintf(stderr,"---- family analogies ----\n");
         acc += runanalogy( words, question_family_txt, question_family_txt_len );
         
         if (verbose) fprintf(stderr,"\nSemantic accuracy = %.4f\n", acc/5);
     }
+
+    /* release memory */
+    free(c_vocab_file_name);
+    free(c_word_file_name);
+    delete hash;
+
+    return 0;
 }

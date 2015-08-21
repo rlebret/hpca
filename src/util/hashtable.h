@@ -138,13 +138,22 @@ class Hashtable
     void insert( const char *key, const int value );
     
     /**
+     * @brief Retrieve a hashing index from a key.
+     *
+     * @param key a string of characters containing a hashtable key
+     *
+     * @return the hashing index
+     **/
+    long int const get( const char *key ) ;
+    
+    /**
      * @brief Retrieve a key-value pair from a hash table.
      *
      * @param key a string of characters containing a hashtable key
      *
      * @return the value
      **/
-    long int const get( const char *key ) ;
+    int const value( const char *key ) ;
     
     /**
      * @brief Shrink the hashtable by removing infrequent values

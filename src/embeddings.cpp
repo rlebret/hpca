@@ -17,9 +17,12 @@
 // You should have received a copy of the GNU General Public License
 // along with HPCA. If not, see <http://www.gnu.org/licenses/>.
 
+// C++ header
+#include <stdexcept>
 
 // include utility headers
 #include "util/util.h"
+#include "util/convert.h"
 #include "util/file.h"
 #include "util/data.h"
 #include "util/constants.h"
@@ -31,6 +34,7 @@
 
 // define global variables
 int norm = false; // true or false
+int num_threads = 8;
 int dim = 100;
 float eig=0.0;
 char *c_input_dir_name, *c_input_file_U_name, *c_input_file_S_name, *c_output_file_name;
@@ -42,16 +46,22 @@ void readMatrix(const char *filename, Eigen::MatrixXf& result)
     File matfile((std::string(filename)));
     // get number of rows from file
     const int rows = matfile.number_of_line();
-    char *line=NULL;
-    char delim=' ';
+    const int cols = matfile.number_of_column(' ');
+    if (cols < dim){
+        std::string err = "number of columns in " + std::string(filename) + " = " + typeToString(cols) + " --> choose a lower word vector dimension !!!";
+        throw std::runtime_error(err);
+    }
     
     // opening file
     matfile.open();
     
     // Populate matrix with numbers.
     result.resize(rows,dim);
+    char *line=NULL;
+    char delim=' ';
     for (int i = 0; i < rows; i++){
         line = matfile.getline();
+        char *ptr = line;
         char *olds = line;
         char olddelim = delim;
         int j=0;
@@ -63,7 +73,9 @@ void readMatrix(const char *filename, Eigen::MatrixXf& result)
             *line++ ^= olddelim; // *line = olddelim; line++;
             olds = line;
         }
+        free(ptr);
     }
+
     // closing file
     matfile.close();
 };
@@ -72,13 +84,18 @@ void readMatrix(const char *filename, Eigen::MatrixXf& result)
 void readVector(const char *filename, Eigen::VectorXf& result)
 {
     File vecfile((std::string(filename)));
-    char *line=NULL;
+    const int rows = vecfile.number_of_line();
+    if (rows < dim){
+        std::string err = "number of lines in " + std::string(filename) + " = " + typeToString(rows) + " --> choose a lower word vector dimension !!!";
+        throw std::runtime_error(err);
+    }
     
     // opening file
     vecfile.open();
     
     // Populate matrix with numbers.
     result.resize(dim);
+    char *line=NULL;
     for (int i = 0; i < dim; i++){
         line = vecfile.getline();
         if (eig==0.5){
@@ -88,6 +105,7 @@ void readVector(const char *filename, Eigen::VectorXf& result)
         }else{
             result(i) = atof(line);
         }
+        free(line);
     }
     // closing file
     vecfile.close();
@@ -144,7 +162,9 @@ int main(int argc, char **argv) {
         printf("\t-dim <int>\n");
         printf("\t\tWord vector dimension; default 100\n");
         printf("\t-norm <int>\n");
-        printf("\t\tAre vectors normalized to unit length? 0=off or 1=on (default is 0)\n");
+        printf("\t\tAre vectors normalized to unit length? 0=off or 1=on (default is 0)\n");        
+        printf("\t-threads <int>\n");
+        printf("\t\tNumber of threads; default 8\n");
         printf("\nExample usage:\n");
         printf("./embeddings -input-dir path_to_svd_files -output-name words.txt -eig 0.0 -dim 100 -norm 0\n\n");
         return 0;
@@ -156,10 +176,21 @@ int main(int argc, char **argv) {
     if ((i = find_arg((char *)"-input-dir", argc, argv)) > 0) strcpy(c_input_dir_name, argv[i + 1]);
     if ((i = find_arg((char *)"-output-name", argc, argv)) > 0) strcpy(c_output_file_name, argv[i + 1]);
     else strcpy(c_output_file_name, "words.txt");
+    if ((i = find_arg((char *)"-threads", argc, argv)) > 0) num_threads = atoi(argv[i + 1]);
+
+    /* set the optimal number of threads */
+    num_threads = MultiThread::optimal_nb_thread(num_threads, 1, num_threads);
+    // set threads
+    Eigen::setNbThreads(num_threads);
     
     /* check whether input directory exists */
     is_directory(c_input_dir_name);
     
+    /* check parameters */
+    if ( (eig<0) || (eig>1) ){
+        throw std::runtime_error("-eig must be a value between 0 and 1 !!");
+    }
+
     /* create output filenames */
     c_input_file_U_name = (char*)malloc(sizeof(char)*(strlen(c_input_dir_name)+strlen("svd.U")+2));
     c_input_file_S_name = (char*)malloc(sizeof(char)*(strlen(c_input_dir_name)+strlen("svd.S")+2));
@@ -170,5 +201,14 @@ int main(int argc, char **argv) {
     is_file( c_input_file_U_name );
     is_file( c_input_file_S_name );
     
-    return run();
+    /* compute embeddings */
+    run();
+
+    /* release memory */
+    free(c_input_dir_name);
+    free(c_output_file_name);
+    free(c_input_file_U_name);
+    free(c_input_file_S_name);
+
+    return 0;
 }

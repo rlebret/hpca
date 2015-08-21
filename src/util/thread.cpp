@@ -1,6 +1,6 @@
 // Multi-threading utility functions
 //
-// Copyright (c) 2009 PGXIS - UMR CNRS 8524
+// Copyright (c) 2015 Idiap Research Institute, http://www.idiap.ch/
 // Written by Rémi Lebret <remi@lebret.ch>
 //
 // This file is part of HPCA.
@@ -90,7 +90,9 @@ MultiThread::MultiThread( const int n_thread
 /** release memory
  **/
 MultiThread::~MultiThread()
-{}
+{
+  delete[] thread_;
+}
 
 /** launch threads
  **/

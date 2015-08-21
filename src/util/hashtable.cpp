@@ -48,6 +48,7 @@ Hashtable::Hashtable( const long int size
 /* Delete a hashtable. */
 Hashtable::~Hashtable()
 {
+    for (int i=0; i<size_; i++) free(table_[i].key);
     free(table_);
     free(hash_);
 }
@@ -104,17 +105,29 @@ void Hashtable::insert( const char *key, const int value ) {
   table_[ht_idx].value+=value; // increment value
 }
 
-/* Retrieve a key-value pair from a hash table. */
+/* Retrieve a hashing index from a hash table key. */
 long int const Hashtable::get( const char *key ) {
 	int bin = hash(key);
-    /* Step through the bin, looking for our value. */
-    while (1) {
-      if (hash_[bin] == -1) return -1;
-      if (!strcmp(key,table_[hash_[bin]].key)) return hash_[bin];
-      bin = (bin + 1) % hash_size_;
-    }
-    return -1;
+  /* Step through the bin, looking for our value. */
+  while (1) {
+    if (hash_[bin] == -1) return -1;
+    if (!strcmp(key,table_[hash_[bin]].key)) return hash_[bin];
+    bin = (bin + 1) % hash_size_;
+  }
+  return -1;
 }
+
+/* Retrieve a key-value pair from a hash table. */
+int const Hashtable::value( const char *key ) {
+  // get hashing index
+  int ht_idx = get(key);
+  if (ht_idx == -1){
+    return -1;
+  }else{
+    return table_[ht_idx].value;
+  }
+}
+
 
 // Shrink the hashtable by removing infrequent values
 void Hashtable::shrink(){

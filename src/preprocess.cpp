@@ -94,7 +94,10 @@ void *preprocess( void *p )
             if ( position-(start+(itr*nbop)) > nbop)
                 loadbar(thread->id(), ++itr, 100);
         }
+        // release memory
+        free(line);
     }
+    // display last percent
     if (verbose) loadbar(thread->id(), 100, 100);
     // close output file
     output_file.close();
@@ -117,7 +120,7 @@ int merge(const int nthreads){
     if (zip){
         File fout(combined_file_name, true);
         fout.open("w");
-        char *line=NULL;
+        char *line= NULL;
         for (int i=0; i<nthreads; i++){
             std::string thread_file_name = output_file_name + "-" + typeToString(i);
             File fin(thread_file_name+".gz", true) ;
@@ -125,9 +128,10 @@ int merge(const int nthreads){
             while( (line=fin.getline()) != NULL){
                 fout.write(line);
                 fout.write("\n");
+                free(line);
             }
             fin.close();
-            std::remove(thread_file_name.c_str());
+            remove(thread_file_name.c_str());
         }
         fout.close();
     }else{
@@ -136,7 +140,7 @@ int merge(const int nthreads){
             std::string thread_file_name = output_file_name + "-" + typeToString(i);
             std::ifstream file(thread_file_name.c_str()) ;
             combined_file << file.rdbuf();
-            std::remove(thread_file_name.c_str());
+            remove(thread_file_name.c_str());
         }
         combined_file.close();
         
@@ -209,5 +213,12 @@ int main(int argc, char **argv) {
     /* check whether input file exists */
     is_file( c_input_file_name );
     
-    return run();
+    /* launch preproccessing */
+    run();
+
+    // release memory
+    free(c_input_file_name);
+    free(c_output_file_name);
+
+    return 0;
 }
