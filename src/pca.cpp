@@ -120,7 +120,7 @@ int main(int argc, char **argv) {
     c_output_name = (char*)malloc(sizeof(char) * MAX_FILE_NAME);
     
     if (argc == 1) {
-        printf("HPCA: Hellinger PCA for Word Representation, performing randomized SVD \n");
+        printf("HPCA: Hellinger PCA for Word Embeddings, performing randomized SVD \n");
         printf("Author: Remi Lebret (remi@lebret.ch)\n\n");
         printf("Usage options:\n");
         printf("\t-verbose <int>\n");
@@ -140,7 +140,15 @@ int main(int argc, char **argv) {
     if ((i = find_arg((char *)"-rank", argc, argv)) > 0) rank = atoi(argv[i + 1]);
     if ((i = find_arg((char *)"-threads", argc, argv)) > 0) num_threads = atoi(argv[i + 1]);
     if ((i = find_arg((char *)"-input-dir", argc, argv)) > 0) strcpy(c_input_dir_name, argv[i + 1]);
-    
+        
+    if (verbose){
+        fprintf(stderr, "HPCA: Hellinger PCA for Word Embeddings\n");
+        fprintf(stderr, "Author: Remi Lebret (remi@lebret.ch)\n");
+        fprintf(stderr, "---------------------------------------\n");
+        fprintf(stderr, "performing randomized SVD\n" );
+        fprintf(stderr, "---------------------------------------\n\n");
+    }
+
     /* check whether input directory exists */
     is_directory(c_input_dir_name);
     c_input_file_name = (char*)malloc(sizeof(char)*(strlen(c_input_dir_name)+strlen("cooccurence.bin")+2));
@@ -151,6 +159,7 @@ int main(int argc, char **argv) {
     
     /* set the optimal number of threads */
     num_threads = MultiThread::optimal_nb_thread(num_threads, 1, num_threads);
+    if (verbose) fprintf(stderr, "number of pthreads = %d\n", num_threads);
     // set threads
     Eigen::setNbThreads(num_threads);
 
@@ -162,5 +171,9 @@ int main(int argc, char **argv) {
     free(c_output_name);
     free(c_input_file_name);
 
+    if (verbose){
+        fprintf(stderr, "\ndone\n");
+        fprintf(stderr, "---------------------------------------\n");
+    }
     return 0;
 }

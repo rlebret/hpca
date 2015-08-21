@@ -184,6 +184,7 @@ int run() {
     
     // get optimal number of threads
     MultiThread threads( num_threads, 1, true, fsize, NULL, &ntokens);
+    if (verbose) fprintf(stderr, "number of pthreads = %d\n", threads.nb_thread());
     input_file.split(threads.nb_thread());    
     threads.linear( getvocab, input_file.flines );
     
@@ -202,7 +203,7 @@ int main(int argc, char **argv) {
     c_vocab_file_name = (char*)malloc(sizeof(char) * MAX_FILE_NAME);
     
     if (argc == 1) {
-        printf("HPCA: Hellinger PCA for Word Representation, vocabulary extraction\n");
+        printf("HPCA: Hellinger PCA for Word Embeddings, vocabulary extraction\n");
         printf("Author: Remi Lebret (remi@lebret.ch)\n\n");
         printf("Usage options:\n");
         printf("\t-verbose <int>\n");
@@ -217,7 +218,15 @@ int main(int argc, char **argv) {
         printf("./vocab -input-file clean_data -vocab-file vocab.txt -nthread 8 -verbose 1\n\n");
         return 0;
     }
-    
+
+    if (verbose){
+        fprintf(stderr, "HPCA: Hellinger PCA for Word Embeddings\n");
+        fprintf(stderr, "Author: Remi Lebret (remi@lebret.ch)\n");
+        fprintf(stderr, "---------------------------------------\n");
+        fprintf(stderr, "vocabulary extraction\n" );
+        fprintf(stderr, "---------------------------------------\n\n");
+    }
+
     if ((i = find_arg((char *)"-verbose", argc, argv)) > 0) verbose = atoi(argv[i + 1]);
     if ((i = find_arg((char *)"-threads", argc, argv)) > 0) num_threads = atoi(argv[i + 1]);
     if ((i = find_arg((char *)"-input-file", argc, argv)) > 0) strcpy(c_input_file_name, argv[i + 1]);
@@ -229,6 +238,10 @@ int main(int argc, char **argv) {
     // free
     free(c_input_file_name);
     free(c_vocab_file_name);
-    
+
+    if (verbose){
+        fprintf(stderr, "\ndone\n");
+        fprintf(stderr, "---------------------------------------\n");
+    }
     return 0;
 }

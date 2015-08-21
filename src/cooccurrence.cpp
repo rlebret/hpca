@@ -377,6 +377,7 @@ int run(){
     
     // get optimal number of threads
     MultiThread threads( num_threads, 1, true, fsize, NULL, NULL);
+    if (verbose) fprintf(stderr, "number of pthreads = %d\n", threads.nb_thread());
     input_file.split(threads.nb_thread());
     // set max size for storing cooccurence
     const float current_memory = (float)get_available_memory()/GIGAOCTET;
@@ -411,7 +412,7 @@ int main(int argc, char **argv) {
     c_output_dir_name = (char*)malloc(sizeof(char) * MAX_PATH_NAME);
     
     if (argc == 1) {
-        printf("HPCA: Hellinger PCA for Word Representation, get co-occurrence probability matrix\n");
+        printf("HPCA: Hellinger PCA for Word Embeddings, get co-occurrence probability matrix\n");
         printf("Author: Remi Lebret (remi@lebret.ch)\n\n");
         printf("Usage options:\n");
         printf("\t-verbose <int>\n");
@@ -440,7 +441,15 @@ int main(int argc, char **argv) {
         printf("./cooccurrence -input-file data -vocab-file vocab.txt -output-dir path_to_dir -min-freq 100 -cxt-size 5 -dyn-cxt 1 -memory 4.0 -upper-bound 1.0 -lower-bound 0.00001 -verbose 1 -threads 4\n\n");
         return 0;
     }
-    
+            
+    if (verbose){
+        fprintf(stderr, "HPCA: Hellinger PCA for Word Embeddings\n");
+        fprintf(stderr, "Author: Remi Lebret (remi@lebret.ch)\n");
+        fprintf(stderr, "---------------------------------------\n");
+        fprintf(stderr, "get co-occurrence probability matrix\n" );
+        fprintf(stderr, "---------------------------------------\n\n");
+    }
+
     if ((i = find_arg((char *)"-verbose", argc, argv)) > 0) verbose = atoi(argv[i + 1]);
     if ((i = find_arg((char *)"-min-freq", argc, argv)) > 0) min_freq = atoi(argv[i + 1]);
     if ((i = find_arg((char *)"-upper-bound", argc, argv)) > 0) upper_bound = atof(argv[i + 1]);
@@ -472,5 +481,9 @@ int main(int argc, char **argv) {
     free(c_output_dir_name);
     free(c_output_file_name);
 
+    if (verbose){
+        fprintf(stderr, "\ndone\n");
+        fprintf(stderr, "---------------------------------------\n");
+    }
     return 0;
 }

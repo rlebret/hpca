@@ -226,55 +226,56 @@ void runsimilarity( const Eigen::MatrixXf& words
     
     const long long int npairs=gold.size();
     if (verbose) fprintf(stderr, "number of pairs = %d\n",npairs);
-    
-    // get scores
-    std::vector<float> scores(npairs);
-    for (int i=0; i<npairs; i++){
-        const float ab = words.row(idx1[i]).dot(words.row(idx2[i]));
-        const float a2 = words.row(idx1[i]).dot(words.row(idx1[i]));
-        const float b2 = words.row(idx2[i]).dot(words.row(idx2[i]));
-        const float ratio = 1./sqrtf(a2*b2);
-        scores[i] = ab * ratio;
-    }
-    
-    // Pearson's correlation
-    // get mean
-    const float cossim_mean = getmean(scores);
-    // get standard deviation
-    const float cossim_std = getstd(scores, cossim_mean);
-    
-    // get gold scores
-    const float  gold_mean = getmean(gold);
-    const float  gold_std = getstd(gold, gold_mean);
-
-    // compute correlation
-    float r=0;
-    for (int i=0; i<npairs; i++){
-        r += (scores[i]-cossim_mean)*(gold[i]-gold_mean);
+    if (npairs>0){
+        // get scores
+        std::vector<float> scores(npairs);
+        for (int i=0; i<npairs; i++){
+            const float ab = words.row(idx1[i]).dot(words.row(idx2[i]));
+            const float a2 = words.row(idx1[i]).dot(words.row(idx1[i]));
+            const float b2 = words.row(idx2[i]).dot(words.row(idx2[i]));
+            const float ratio = 1./sqrtf(a2*b2);
+            scores[i] = ab * ratio;
+        }
         
-    }
-    r/=((npairs-1)*cossim_std*gold_std);
-    
-    //  Spearman's correlation
-    std::vector<int> cossimsortidx = ordered(&scores);
-    std::vector<int> goldsortidx = ordered(&gold);
-    
-    // get ranks
-    std::vector<float> cossimrank = rank(scores, cossimsortidx);
-    std::vector<float> goldrank = rank(gold, goldsortidx);
-    float sum=0;
-    for (int i=0; i<npairs; i++){
-        const int idx = cossimsortidx[i];
-        int j=0;
-        while (goldsortidx[j] != idx) j++;
-        const float s = cossimrank[i]-goldrank[j];
-        sum += s*s;
-    }
-    const float p = 1-(6*sum)/(npairs*(npairs*npairs-1));
-    
-    if (verbose){
-        fprintf(stderr, "Pearson's correlation = %f\n",r);
-        fprintf(stderr, "Spearman's correlation = %f\n",p);
+        // Pearson's correlation
+        // get mean
+        const float cossim_mean = getmean(scores);
+        // get standard deviation
+        const float cossim_std = getstd(scores, cossim_mean);
+        
+        // get gold scores
+        const float  gold_mean = getmean(gold);
+        const float  gold_std = getstd(gold, gold_mean);
+
+        // compute correlation
+        float r=0;
+        for (int i=0; i<npairs; i++){
+            r += (scores[i]-cossim_mean)*(gold[i]-gold_mean);
+            
+        }
+        r/=((npairs-1)*cossim_std*gold_std);
+        
+        //  Spearman's correlation
+        std::vector<int> cossimsortidx = ordered(&scores);
+        std::vector<int> goldsortidx = ordered(&gold);
+        
+        // get ranks
+        std::vector<float> cossimrank = rank(scores, cossimsortidx);
+        std::vector<float> goldrank = rank(gold, goldsortidx);
+        float sum=0;
+        for (int i=0; i<npairs; i++){
+            const int idx = cossimsortidx[i];
+            int j=0;
+            while (goldsortidx[j] != idx) j++;
+            const float s = cossimrank[i]-goldrank[j];
+            sum += s*s;
+        }
+        const float p = 1-(6*sum)/(npairs*(npairs*npairs-1));
+        
+        if (verbose){
+            fprintf(stderr, "Pearson's correlation = %f\n",r);
+            fprintf(stderr, "Spearman's correlation = %f\n",p);
+        }
     }
 }
 
@@ -333,46 +334,49 @@ float const runanalogy( const Eigen::MatrixXf& words
         fprintf(stderr, "number of questions = %d\n",n);
         fprintf(stderr, "number of words = %d\n",nword);
     }
-    
-    // define vector to store distances
-    std::vector<float> distances(nword);
-    
-    // define temp matrices
-    Eigen::MatrixXf A(words.cols(),n);
-    Eigen::MatrixXf B(words.cols(),n);
-    Eigen::MatrixXf C(words.cols(),n);
-    Eigen::MatrixXf D(nword,words.cols());
-    // initialize A, B and C matrices
-    for (int i=0; i<n; i++){
-        A.col(i) = words.row(a[i]);
-        B.col(i) = words.row(b[i]);
-        C.col(i) = words.row(c[i]);
-    }
-    // initialize D matrix
-    for (int i=0; i<nword; i++) D.row(i) = words.row(idx[i]);
-
-    // cosine similarity
-    Eigen::MatrixXf y = D * (B - A + C);
-    
-    // get accuracy
-    int acc=0;    
-    // loop over all words
-    for (int j=0; j<n; j++){
-        float maxval=0;
-        int maxidx;
-        for (int i=0; i<nword; i++){
-            const int curridx =idx[i];
-            if ( (y(i,j)>maxval) && (curridx!=a[j]) && (curridx!=b[j]) && (curridx!=c[j])){
-                maxval = y(i,j);
-                maxidx=curridx;
-            }
+    if (n>0){
+        // define vector to store distances
+        std::vector<float> distances(nword);
+        
+        // define temp matrices
+        Eigen::MatrixXf A(words.cols(),n);
+        Eigen::MatrixXf B(words.cols(),n);
+        Eigen::MatrixXf C(words.cols(),n);
+        Eigen::MatrixXf D(nword,words.cols());
+        // initialize A, B and C matrices
+        for (int i=0; i<n; i++){
+            A.col(i) = words.row(a[i]);
+            B.col(i) = words.row(b[i]);
+            C.col(i) = words.row(c[i]);
         }
-        if ( maxidx == d[j] ) acc++;
-    }
-    const float final_acc = (float)acc/n;
-    if (verbose) fprintf(stderr,"accuracy = %.4f\n", final_acc);
+        // initialize D matrix
+        for (int i=0; i<nword; i++) D.row(i) = words.row(idx[i]);
 
-    return final_acc;
+        // cosine similarity
+        Eigen::MatrixXf y = D * (B - A + C);
+        
+        // get accuracy
+        int acc=0;    
+        // loop over all words
+        for (int j=0; j<n; j++){
+            float maxval=0;
+            int maxidx;
+            for (int i=0; i<nword; i++){
+                const int curridx =idx[i];
+                if ( (y(i,j)>maxval) && (curridx!=a[j]) && (curridx!=b[j]) && (curridx!=c[j])){
+                    maxval = y(i,j);
+                    maxidx=curridx;
+                }
+            }
+            if ( maxidx == d[j] ) acc++;
+        }
+        const float final_acc = (float)acc/n;
+        if (verbose) fprintf(stderr,"accuracy = %.4f\n", final_acc);
+
+        return final_acc;
+    }else{
+        return 0;
+    }
 }
 
 
@@ -389,7 +393,7 @@ int main(int argc, char **argv) {
     c_vocab_file_name = (char*)malloc(sizeof(char) * MAX_PATH_NAME + MAX_FILE_NAME);
     
     if (argc == 1) {
-        printf("HPCA: Hellinger PCA for Word Representation, embeddings evaluation\n");
+        printf("HPCA: Hellinger PCA for Word Embeddings, embeddings evaluation\n");
         printf("Author: Remi Lebret (remi@lebret.ch)\n\n");
         printf("Usage options:\n");
         printf("\t-verbose <int>\n");
@@ -428,9 +432,17 @@ int main(int argc, char **argv) {
     if ((i = find_arg((char *)"-lower", argc, argv)) > 0) lower = atoi(argv[i + 1]);
     if ((i = find_arg((char *)"-threads", argc, argv)) > 0) num_threads = atoi(argv[i + 1]);
     
+    if (verbose){
+        fprintf(stderr, "HPCA: Hellinger PCA for Word Embeddings\n");
+        fprintf(stderr, "Author: Remi Lebret (remi@lebret.ch)\n");
+        fprintf(stderr, "---------------------------------------\n");
+        fprintf(stderr, "embeddings evaluation\n" );
+        fprintf(stderr, "---------------------------------------\n\n");
+    }
 
     /* set the optimal number of threads */
     num_threads = MultiThread::optimal_nb_thread(num_threads, 1, num_threads);
+    if (verbose) fprintf(stderr, "number of pthreads = %d\n", num_threads);
     // set threads
     Eigen::setNbThreads(num_threads);
 
@@ -448,27 +460,26 @@ int main(int argc, char **argv) {
     
     if (ws){
         if (verbose){
-            fprintf(stderr, "\n------------------------------------------------\n");
+            fprintf(stderr, "\n---------------------------------------\n");
             fprintf(stderr, "WordSim-353 Dataset\n");
-            fprintf(stderr, "------------------------------------------------\n");
-            
+            fprintf(stderr, "---------------------------------------\n");
         }
         runsimilarity( words, wordsim353_txt, wordsim353_txt_len);
     }
     if (rg){
         if (verbose){
-            fprintf(stderr, "\n------------------------------------------------\n");
+            fprintf(stderr, "\n---------------------------------------\n");
             fprintf(stderr, "Rubenstein and Goodenough (1965) Dataset\n");
-            fprintf(stderr, "------------------------------------------------\n");
+            fprintf(stderr, "---------------------------------------\n");
             
         }
         runsimilarity( words, rg65_txt, rg65_txt_len);
     }
     if (rw){
         if (verbose){
-            fprintf(stderr, "\n------------------------------------------------\n");
+            fprintf(stderr, "\n---------------------------------------\n");
             fprintf(stderr, "Stanford Rare Word Dataset\n");
-            fprintf(stderr, "------------------------------------------------\n");
+            fprintf(stderr, "---------------------------------------\n");
         }
         runsimilarity( words, rareword_txt, rareword_txt_len);
     }
@@ -477,9 +488,9 @@ int main(int argc, char **argv) {
     }
     if (syn){
         if (verbose){
-            fprintf(stderr, "\n------------------------------------------------\n");
+            fprintf(stderr, "\n---------------------------------------\n");
             fprintf(stderr, "Microsoft Research Syntactic Analogies\n");
-            fprintf(stderr, "------------------------------------------------\n");
+            fprintf(stderr, "---------------------------------------\n");
         }
         
         float acc=0.0;
@@ -506,9 +517,9 @@ int main(int argc, char **argv) {
     }
     if (sem){
         if (verbose){
-            fprintf(stderr, "\n------------------------------------------------\n");
+            fprintf(stderr, "\n---------------------------------------\n");
             fprintf(stderr, "Google Semantic Analogies\n");
-            fprintf(stderr, "------------------------------------------------\n");
+            fprintf(stderr, "---------------------------------------\n");
         }
         
         float acc=0.0;
@@ -531,5 +542,9 @@ int main(int argc, char **argv) {
     free(c_word_file_name);
     delete hash;
 
+    if (verbose){
+        fprintf(stderr, "\ndone\n");
+        fprintf(stderr, "---------------------------------------\n");
+    }
     return 0;
 }

@@ -15,7 +15,7 @@ fi
 EXP_DIR=demo
 CORPUS=data/reuters.token.gz
 CLEAN_CORPUS=data/reuters.token.clean
-VOCAB_FILE=demo/vocab.txt
+VOCAB_FILE=data/vocab.txt
 VERBOSE=1
 NUM_THREADS=4
 

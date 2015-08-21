@@ -149,6 +149,7 @@ The user should supply the directory where files produced by `pca` are.
 * `-eig <float>`: Eigenvalue weighting (0.0, 0.5 or 1.0); default is 0.0
 * `-norm <int>`: Are vectors normalized to unit length? 0=off (default) or 1=on
 * `-threads <int>`: Number of threads; default 8
+* `-verbose <int>`: Set verbosity: 0=off or 1=on (default)
 
 **Example**:
 ```

@@ -34,6 +34,7 @@
 #include "redsvd/redsvdFile.h"
 
 // define global variables
+int verbose = true; // true or false
 int norm = false; // true or false
 int num_threads = 8;
 int dim = 100;
@@ -53,6 +54,7 @@ void readMatrix(const char *filename, Eigen::MatrixXf& result)
         throw std::runtime_error(err);
     }
     
+    if (verbose) fprintf(stderr, "reading singular vectors in %s\n", filename);
     // opening file
     matfile.open();
     
@@ -90,7 +92,7 @@ void readVector(const char *filename, Eigen::VectorXf& result)
         std::string err = "number of lines in " + std::string(filename) + " = " + typeToString(rows) + " --> choose a lower word vector dimension !!!";
         throw std::runtime_error(err);
     }
-    
+    if (verbose) fprintf(stderr, "reading singular values in %s\n", filename);
     // opening file
     vecfile.open();
     
@@ -126,6 +128,7 @@ int run() {
     
     // write out embeddings
     std::string output_name = std::string(c_input_dir_name) + "/" + std::string(c_output_file_name);
+    if (verbose) fprintf(stderr, "writing word embeddings in %s\n", output_name.c_str());
     FILE* outfp = fopen(output_name.c_str(), "wb");
     if (outfp == NULL){
         throw std::string("cannot open ") + output_name;
@@ -149,7 +152,7 @@ int main(int argc, char **argv) {
     c_output_file_name = (char*)malloc(sizeof(char) * MAX_FILE_NAME);
     
     if (argc == 1) {
-        printf("HPCA: Hellinger PCA for Word Representation, embeddings computation\n");
+        printf("HPCA: Hellinger PCA for Word Embeddings, embeddings computation\n");
         printf("Author: Remi Lebret (remi@lebret.ch)\n\n");
         printf("Usage options:\n");
         printf("\t-verbose <int>\n");
@@ -171,6 +174,7 @@ int main(int argc, char **argv) {
         return 0;
     }
     
+    if ((i = find_arg((char *)"-verbose", argc, argv)) > 0) verbose = atoi(argv[i + 1]);
     if ((i = find_arg((char *)"-norm", argc, argv)) > 0) norm = atoi(argv[i + 1]);
     if ((i = find_arg((char *)"-dim", argc, argv)) > 0) dim = atoi(argv[i + 1]);
     if ((i = find_arg((char *)"-eig", argc, argv)) > 0) eig = atof(argv[i + 1]);
@@ -179,8 +183,16 @@ int main(int argc, char **argv) {
     else strcpy(c_output_file_name, "words.txt");
     if ((i = find_arg((char *)"-threads", argc, argv)) > 0) num_threads = atoi(argv[i + 1]);
 
+    if (verbose){
+        fprintf(stderr, "HPCA: Hellinger PCA for Word Embeddings\n");
+        fprintf(stderr, "Author: Remi Lebret (remi@lebret.ch)\n");
+        fprintf(stderr, "---------------------------------------\n");
+        fprintf(stderr, "embeddings computation\n" );
+        fprintf(stderr, "---------------------------------------\n\n");
+    }
     /* set the optimal number of threads */
     num_threads = MultiThread::optimal_nb_thread(num_threads, 1, num_threads);
+    if (verbose) fprintf(stderr, "number of pthreads = %d\n", num_threads);
     // set threads
     Eigen::setNbThreads(num_threads);
     
@@ -211,5 +223,9 @@ int main(int argc, char **argv) {
     free(c_input_file_U_name);
     free(c_input_file_S_name);
 
+    if (verbose){
+        fprintf(stderr, "\ndone\n");
+        fprintf(stderr, "---------------------------------------\n");
+    }
     return 0;
 }

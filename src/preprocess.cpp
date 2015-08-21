@@ -163,6 +163,7 @@ int run() {
     if (verbose) fprintf(stderr, "number of byte in %s = %ld\n",c_input_file_name,fsize);
     
     MultiThread threads( num_threads, 1, true, fsize, NULL, NULL);
+    if (verbose) fprintf(stderr, "number of pthreads = %d\n", threads.nb_thread());
     input_file.split(threads.nb_thread());
     threads.linear( preprocess, input_file.flines );
     
@@ -179,7 +180,7 @@ int main(int argc, char **argv) {
     c_output_file_name = (char*)malloc(sizeof(char) * MAX_PATH_NAME+MAX_FILE_NAME);
     
     if (argc == 1) {
-        printf("HPCA: Hellinger PCA for Word Representation, preprocessing stage\n");
+        printf("HPCA: Hellinger PCA for Word Embeddings, preprocessing stage\n");
         printf("Author: Remi Lebret (remi@lebret.ch)\n\n");
         printf("Usage options:\n");
         printf("\t-verbose <int>\n");
@@ -209,7 +210,14 @@ int main(int argc, char **argv) {
     if ((i = find_arg((char *)"-output-file", argc, argv)) > 0) strcpy(c_output_file_name, argv[i + 1]);
     else strcpy(c_output_file_name, (char *)"clean_data");
     if ((i = find_arg((char *)"-input-file", argc, argv)) > 0) strcpy(c_input_file_name, argv[i + 1]);
-
+    
+    if (verbose){
+        fprintf(stderr, "HPCA: Hellinger PCA for Word Embeddings\n");
+        fprintf(stderr, "Author: Remi Lebret (remi@lebret.ch)\n");
+        fprintf(stderr, "---------------------------------------\n");
+        fprintf(stderr, "preprocessing stage\n" );
+        fprintf(stderr, "---------------------------------------\n\n");
+    }
     /* check whether input file exists */
     is_file( c_input_file_name );
     
@@ -220,5 +228,9 @@ int main(int argc, char **argv) {
     free(c_input_file_name);
     free(c_output_file_name);
 
+    if (verbose){
+        fprintf(stderr, "\ndone\n");
+        fprintf(stderr, "---------------------------------------\n");
+    }
     return 0;
 }
