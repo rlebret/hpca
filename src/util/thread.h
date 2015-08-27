@@ -173,7 +173,7 @@ class MultiThread
     /**< Number of threads */
     int nb_thread_;
     /**< Number of elements to scatter */
-    int nb_element_;
+    long int nb_element_;
     /**< array of Thread */
     Thread * thread_;
 
@@ -193,7 +193,7 @@ class MultiThread
     MultiThread( const int n_thread
                , const int thread_per_cpu
                , bool const force_cpu_affinity
-               , const int n_element
+               , const long int n_element
                , void* that
                , void* object
                );
@@ -228,7 +228,7 @@ class MultiThread
      */
     static int optimal_nb_thread( const int n_thread
                                 , const int thread_per_cpu
-                                , const int n_element
+                                , const long int n_element
                                 );
 
     /**

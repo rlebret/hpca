@@ -33,12 +33,13 @@
  **/
 int MultiThread::optimal_nb_thread( const int n_thread
                                   , const int thread_per_cpu
-                                  , const int n_element
+                                  , const long int n_element
                                   )
 {
   int optimal_number = n_thread;
   // Determine the actual number of processors
-  int NUM_PROCS = sysconf(_SC_NPROCESSORS_CONF);
+  int NUM_PROCS = sysconf(_SC_NPROCESSORS_CONF); 
+
   if ( (n_thread < 0) || ( n_thread > NUM_PROCS) )
   {
     if ( n_element < NUM_PROCS ) optimal_number = n_element ;
@@ -64,7 +65,7 @@ int MultiThread::optimal_nb_thread( const int n_thread
 MultiThread::MultiThread( const int n_thread
                         , const int thread_per_cpu
                         , bool const force_cpu_affinity
-                        , const int n_element
+                        , const long int n_element
                         , void* that
                         , void* object
                         )
@@ -74,6 +75,7 @@ MultiThread::MultiThread( const int n_thread
 {
   // get the optimal number of threads
   nb_thread_ = optimal_nb_thread(n_thread, thread_per_cpu, n_element);
+
   // create Threads
   thread_ = new Thread[nb_thread_];
   for (int i=0; i<nb_thread_; i++)
