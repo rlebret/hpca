@@ -377,20 +377,21 @@ int run(){
     
     // get optimal number of threads
     MultiThread threads( num_threads, 1, true, fsize, NULL, NULL);
-    if (verbose) fprintf(stderr, "number of pthreads = %d\n", threads.nb_thread());
-    input_file.split(threads.nb_thread());
+    num_threads = threads.nb_thread();
+    if (verbose) fprintf(stderr, "number of pthreads = %d\n", num_threads);
+    input_file.split(num_threads);
     // set max size for storing cooccurence
     const float current_memory = (float)get_available_memory()/GIGAOCTET;
     if (memory_limit>current_memory) memory_limit = current_memory;
-    max_cooccur_size = (unsigned long long) (0.7 * memory_limit * GIGAOCTET/(sizeof(cooccur_t)) / threads.nb_thread());
+    max_cooccur_size = (unsigned long long) (0.7 * memory_limit * GIGAOCTET/(sizeof(cooccur_t)) / num_threads);
     // set number of file per thread
-    nfile = (int*)calloc(threads.nb_thread(), sizeof(int));
+    nfile = (int*)calloc(num_threads, sizeof(int));
     
     // launch threads
     threads.linear( cooccurrence, input_file.flines );
     
     // merge temporary files
-    merge_files(threads.nb_thread());
+    merge_files(num_threads);
     
     // write vocabularies
     write_vocab();
@@ -404,6 +405,37 @@ int run(){
     
     return 0;
 }
+
+void write_options(){
+
+    char *c_options_file_name = (char*)malloc(sizeof(char)*(strlen(c_output_dir_name)+strlen("options.txt")+1));
+    sprintf(c_options_file_name, "%s/options.txt",c_output_dir_name);
+  
+    FILE *fopt = fopen(c_options_file_name, "w");
+
+    fprintf(fopt, "#######################\n");
+    fprintf(fopt, "# general options     #\n");
+    fprintf(fopt, "#######################\n");
+    fprintf(fopt, "EXP_DIR=%s\n",c_output_dir_name);
+    fprintf(fopt, "CORPUS_FILE=%s\n",c_input_file_name);
+    fprintf(fopt, "VOCAB_FILE=%s\n",c_vocab_file_name);
+    fprintf(fopt, "VERBOSE=%d\n",verbose);
+    fprintf(fopt, "NUM_THREADS=%d\n\n",num_threads);
+
+    fprintf(fopt, "#######################\n");
+    fprintf(fopt, "# cooccurence options #\n");
+    fprintf(fopt, "#######################\n");
+    fprintf(fopt, "MEMORY=%f\n",memory_limit);
+    fprintf(fopt, "VOCAB_MIN_COUNT=%d\n",min_freq);
+    fprintf(fopt, "CONTEXT_VOCAB_UPPER_BOUND_FREQ=%f\n",upper_bound);
+    fprintf(fopt, "CONTEXT_VOCAB_LOWER_BOUND_FREQ=%f\n",lower_bound);
+    fprintf(fopt, "DYN_CXT=%d\n",dyn_cxt);
+    fprintf(fopt, "WINDOW_SIZE=%d\n",cxt_size);
+
+    fclose(fopt);
+    free(c_options_file_name);
+}
+
 
 int main(int argc, char **argv) {
     int i;
@@ -474,6 +506,9 @@ int main(int argc, char **argv) {
     is_file(c_vocab_file_name);
     
     run();
+
+    /* write out options */
+    write_options();
 
     /* release memory */
     free(c_input_file_name);

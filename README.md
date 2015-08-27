@@ -106,6 +106,7 @@ cooccurrence -input-file corpus-clean.txt -vocab-file vocab.txt -output-dir path
 * `coccurrence.bin`: binary file containing the counts
 * `target_words.txt`: vocabulary of words from which embeddings will be generated (rows of the cooccurrence matrix)
 * `context_words.txt`: vocabulary of context words (columns of the cooccurrence matrix)
+* `options.txt`: files reporting the chosen options for getting word cooccurrence statistics
 
 ### Performing Hellinger PCA
 
@@ -156,9 +157,9 @@ The user should supply the directory where files produced by `pca` are.
 embeddings -input-dir path_to_svd_files -output-name words.txt -eig 0.0 -dim 100 -norm 0
 ```
 
-## Evaluating word embeddings
+### Evaluating word embeddings
 
-This tool provides a quick evaluation of the word embeddings produced by `embeddings`.
+This tool provides a quick evaluation of the word embeddings produced by `embeddings` for an English corpus.
 
 It contains the following evaluation datasets:
 * [The WordSimilarity-353 Test Collection](http://www.cs.technion.ac.il/~gabr/resources/data/wordsim353/)
