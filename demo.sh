@@ -61,7 +61,7 @@ if [[ $? -eq 0 ]]
 	      ./bin/embeddings -input-dir $EXP_DIR -output-name $EMB_NAME -dim $VECTOR_SIZE -eig $EIG -norm $NORM -threads $NUM_THREADS -verbose $VERBOSE
         if [[ $? -eq 0 ]]
         then # do word embeddings evaluation
-          ./bin/eval -word-file $EXP_DIR/$EMB_NAME -vocab-file $EXP_DIR/target_words.txt -threads $NUM_THREADS -verbose $VERBOSE
+          ./bin/eval -word-file $EXP_DIR/$EMB_NAME -vocab-file $EXP_DIR/target_words.txt -threads $NUM_THREADS -verbose $VERBOSE > $EXP_DIR/words-eval.txt
         fi
       fi
     fi

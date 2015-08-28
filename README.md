@@ -160,6 +160,7 @@ embeddings -input-dir path_to_svd_files -output-name words.txt -eig 0.0 -dim 100
 ### Evaluating word embeddings
 
 This tool provides a quick evaluation of the word embeddings produced by `embeddings` for an English corpus.
+Console output can be redirected to a file.
 
 It contains the following evaluation datasets:
 * [The WordSimilarity-353 Test Collection](http://www.cs.technion.ac.il/~gabr/resources/data/wordsim353/)
@@ -182,7 +183,7 @@ It contains the following evaluation datasets:
 
 **Example**:
 ```
-eval -input-file words.txt -vocab-file target_vocab.txt -ws353 1 -rg65 1 -rw 1 -syn 1 -sem 1 -verbose 1
+eval -input-file words.txt -vocab-file target_vocab.txt -ws353 1 -rg65 1 -rw 1 -syn 1 -sem 1 -verbose 1 > words-eval.txt
 ```
 
 **NOTE**: To speed up the implementation of the analogies, candidate solutions come from a closed vocabulary.

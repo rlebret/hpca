@@ -23,6 +23,7 @@
 #include <algorithm>
 #include <cfloat>
 #include <iostream>
+#include <unistd.h>
 
 // include utility headers
 #include "util/util.h"
@@ -272,7 +273,9 @@ void runsimilarity( const Eigen::MatrixXf& words
         }
         const float p = 1-(6*sum)/(npairs*(npairs*npairs-1));
         
-        if (verbose){
+        fprintf(stdout, "Pearson's correlation = %f\n",r);
+        fprintf(stdout, "Spearman's correlation = %f\n",p);
+        if (verbose && !isatty(STDOUT_FILENO)){
             fprintf(stderr, "Pearson's correlation = %f\n",r);
             fprintf(stderr, "Spearman's correlation = %f\n",p);
         }
@@ -371,8 +374,10 @@ float const runanalogy( const Eigen::MatrixXf& words
             if ( maxidx == d[j] ) acc++;
         }
         const float final_acc = (float)acc/n;
-        if (verbose) fprintf(stderr,"accuracy = %.4f\n", final_acc);
-
+        fprintf(stdout,"accuracy = %.4f\n", final_acc);
+        if ( verbose && !isatty(STDOUT_FILENO) ){
+            fprintf(stderr,"accuracy = %.4f\n", final_acc);
+        }
         return final_acc;
     }else{
         return 0;
@@ -459,24 +464,32 @@ int main(int argc, char **argv) {
     readMatrix(c_word_file_name, words);
     
     if (ws){
-        if (verbose){
+        fprintf(stdout, "\n---------------------------------------\n");
+        fprintf(stdout, "WordSim-353 Dataset\n");
+        fprintf(stdout, "---------------------------------------\n");
+        if (verbose && !isatty(STDOUT_FILENO)){
             fprintf(stderr, "\n---------------------------------------\n");
             fprintf(stderr, "WordSim-353 Dataset\n");
-            fprintf(stderr, "---------------------------------------\n");
+            fprintf(stderr, "---------------------------------------\n"); 
         }
         runsimilarity( words, wordsim353_txt, wordsim353_txt_len);
     }
     if (rg){
-        if (verbose){
+        fprintf(stdout, "\n---------------------------------------\n");
+        fprintf(stdout, "Rubenstein and Goodenough (1965) Dataset\n");
+        fprintf(stdout, "---------------------------------------\n");
+        if (verbose && !isatty(STDOUT_FILENO)){
             fprintf(stderr, "\n---------------------------------------\n");
             fprintf(stderr, "Rubenstein and Goodenough (1965) Dataset\n");
             fprintf(stderr, "---------------------------------------\n");
-            
         }
         runsimilarity( words, rg65_txt, rg65_txt_len);
     }
     if (rw){
-        if (verbose){
+        fprintf(stdout, "\n---------------------------------------\n");
+        fprintf(stdout, "Stanford Rare Word Dataset\n");
+        fprintf(stdout, "---------------------------------------\n");
+        if (verbose && !isatty(STDOUT_FILENO)){
             fprintf(stderr, "\n---------------------------------------\n");
             fprintf(stderr, "Stanford Rare Word Dataset\n");
             fprintf(stderr, "---------------------------------------\n");
@@ -487,54 +500,77 @@ int main(int argc, char **argv) {
         words.rowwise().normalize();
     }
     if (syn){
-        if (verbose){
+        if (verbose && !isatty(STDOUT_FILENO)) {
             fprintf(stderr, "\n---------------------------------------\n");
             fprintf(stderr, "Microsoft Research Syntactic Analogies\n");
             fprintf(stderr, "---------------------------------------\n");
         }
+        fprintf(stdout, "\n---------------------------------------\n");
+        fprintf(stdout, "Microsoft Research Syntactic Analogies\n");
+        fprintf(stdout, "---------------------------------------\n");
         
         float acc=0.0;
-        if (verbose) fprintf(stderr,"---- adjective-to-adverb analogies ----\n");
+        if (verbose && !isatty(STDOUT_FILENO)) fprintf(stderr,"---- adjective-to-adverb analogies ----\n");
+        fprintf(stdout,"---- adjective-to-adverb analogies ----\n");
         acc += runanalogy( words, question_gram1_adjective_to_adverb_txt, question_gram1_adjective_to_adverb_txt_len );
-        if (verbose) fprintf(stderr,"---- opposite analogies ----\n");
+        if (verbose && !isatty(STDOUT_FILENO)) fprintf(stderr,"---- opposite analogies ----\n");
+        fprintf(stdout,"---- opposite analogies ----\n");
         acc += runanalogy( words, question_gram2_opposite_txt, question_gram2_opposite_txt_len );
-        if (verbose) fprintf(stderr,"---- comparative analogies ----\n");
+        if (verbose && !isatty(STDOUT_FILENO)) fprintf(stderr,"---- comparative analogies ----\n");
+        fprintf(stdout,"---- comparative analogies ----\n");
         acc += runanalogy( words, question_gram3_comparative_txt, question_gram3_comparative_txt_len );
-        if (verbose) fprintf(stderr,"---- superlative analogies ----\n");
+        if (verbose && !isatty(STDOUT_FILENO))  fprintf(stderr,"---- superlative analogies ----\n");
+        fprintf(stdout,"---- superlative analogies ----\n");
         acc += runanalogy( words, question_gram4_superlative_txt, question_gram4_superlative_txt_len );
-        if (verbose) fprintf(stderr,"---- present-participle analogies ----\n");
+        if (verbose && !isatty(STDOUT_FILENO)) fprintf(stderr,"---- present-participle analogies ----\n");
+        fprintf(stdout,"---- present-participle analogies ----\n");
         acc += runanalogy( words, question_gram5_present_participle_txt, question_gram5_present_participle_txt_len );
-        if (verbose) fprintf(stderr,"---- nationality-adjective analogies ----\n");
+        if (verbose && !isatty(STDOUT_FILENO)) fprintf(stderr,"---- nationality-adjective analogies ----\n");
+        fprintf(stdout,"---- nationality-adjective analogies ----\n");
         acc += runanalogy( words, question_gram6_nationality_adjective_txt, question_gram6_nationality_adjective_txt_len );
-        if (verbose) fprintf(stderr,"---- past-tense analogies ----\n");
+        if (verbose && !isatty(STDOUT_FILENO)) fprintf(stderr,"---- past-tense analogies ----\n");
+        fprintf(stdout,"---- past-tense analogies ----\n");
         acc += runanalogy( words, question_gram7_past_tense_txt, question_gram7_past_tense_txt_len );
-        if (verbose) fprintf(stderr,"---- plural analogies ----\n");
+        if (verbose && !isatty(STDOUT_FILENO)) fprintf(stderr,"---- plural analogies ----\n");
+        fprintf(stdout,"---- plural analogies ----\n");
         acc += runanalogy( words, question_gram8_plural_txt, question_gram8_plural_txt_len );
-        if (verbose) fprintf(stderr,"---- plural-verbs analogies ----\n");
+        if (verbose && !isatty(STDOUT_FILENO)) fprintf(stderr,"---- plural-verbs analogies ----\n");
+        fprintf(stdout,"---- plural-verbs analogies ----\n");
         acc += runanalogy( words, question_gram9_plural_verbs_txt, question_gram9_plural_verbs_txt_len);
         
-        if (verbose) fprintf(stderr,"\nSyntactic accuracy = %.4f\n", acc/9);
+        if (verbose && !isatty(STDOUT_FILENO)) fprintf(stderr,"\nSyntactic accuracy = %.4f\n", acc/9);
+        fprintf(stdout,"\nSyntactic accuracy = %.4f\n", acc/9);
     }
     if (sem){
-        if (verbose){
+        if (verbose && !isatty(STDOUT_FILENO)) {
             fprintf(stderr, "\n---------------------------------------\n");
             fprintf(stderr, "Google Semantic Analogies\n");
             fprintf(stderr, "---------------------------------------\n");
         }
+        fprintf(stdout, "\n---------------------------------------\n");
+        fprintf(stdout, "Google Semantic Analogies\n");
+        fprintf(stdout, "---------------------------------------\n");
         
         float acc=0.0;
-        if (verbose) fprintf(stderr,"---- capital-common-countries analogies ----\n");
+
+        if (verbose && !isatty(STDOUT_FILENO)) fprintf(stderr,"---- capital-common-countries analogies ----\n");
+        fprintf(stdout,"---- capital-common-countries analogies ----\n");
         acc += runanalogy( words, question_capital_common_countries_txt, question_capital_common_countries_txt_len );
-        if (verbose) fprintf(stderr,"---- capital-world analogies ----\n");
+        if (verbose && !isatty(STDOUT_FILENO)) fprintf(stderr,"---- capital-world analogies ----\n");
+        fprintf(stdout,"---- capital-world analogies ----\n");
         acc += runanalogy( words, question_capital_world_txt, question_capital_world_txt_len );
-        if (verbose) fprintf(stderr,"---- city-in-state analogies ----\n");
+        if (verbose && !isatty(STDOUT_FILENO)) fprintf(stderr,"---- city-in-state analogies ----\n");
+        fprintf(stdout,"---- city-in-state analogies ----\n");
         acc += runanalogy( words, question_city_in_state_txt, question_city_in_state_txt_len );
-        if (verbose) fprintf(stderr,"---- currency analogies ----\n");
+        if (verbose && !isatty(STDOUT_FILENO)) fprintf(stderr,"---- currency analogies ----\n");
+        fprintf(stdout,"---- currency analogies ----\n");
         acc += runanalogy( words, question_currency_txt, question_currency_txt_len );
-        if (verbose) fprintf(stderr,"---- family analogies ----\n");
+        if (verbose && !isatty(STDOUT_FILENO)) fprintf(stderr,"---- family analogies ----\n");
+        fprintf(stdout,"---- family analogies ----\n");
         acc += runanalogy( words, question_family_txt, question_family_txt_len );
         
-        if (verbose) fprintf(stderr,"\nSemantic accuracy = %.4f\n", acc/5);
+        if (verbose && !isatty(STDOUT_FILENO)) fprintf(stderr,"\nSemantic accuracy = %.4f\n", acc/5);
+        fprintf(stdout,"\nSemantic accuracy = %.4f\n", acc/5);
     }
 
     /* release memory */
