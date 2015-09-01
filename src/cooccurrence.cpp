@@ -188,7 +188,7 @@ int get_vocab(){
     return 0;
 }
 
-/* write out cooccurence vocabularies */
+/* write out cooccurrence vocabularies */
 void write_vocab(){
     
     char * c_output_word_name = (char*)malloc(sizeof(char)*(strlen(c_output_dir_name)+strlen("target_words.txt")+2));
@@ -380,7 +380,7 @@ int run(){
     num_threads = threads.nb_thread();
     if (verbose) fprintf(stderr, "number of pthreads = %d\n", num_threads);
     input_file.split(num_threads);
-    // set max size for storing cooccurence
+    // set max size for storing cooccurrence
     const float current_memory = (float)get_available_memory()/GIGAOCTET;
     if (memory_limit>current_memory) memory_limit = current_memory;
     max_cooccur_size = (unsigned long long) (0.7 * memory_limit * GIGAOCTET/(sizeof(cooccur_t)) / num_threads);
@@ -423,7 +423,7 @@ void write_options(){
     fprintf(fopt, "NUM_THREADS=%d\n\n",num_threads);
 
     fprintf(fopt, "#######################\n");
-    fprintf(fopt, "# cooccurence options #\n");
+    fprintf(fopt, "# cooccurrence options #\n");
     fprintf(fopt, "#######################\n");
     fprintf(fopt, "MEMORY=%f\n",memory_limit);
     fprintf(fopt, "VOCAB_MIN_COUNT=%d\n",min_freq);
@@ -497,8 +497,8 @@ int main(int argc, char **argv) {
     
     /* check whether output directory exists */
     is_directory(c_output_dir_name);
-    c_output_file_name = (char*)malloc(sizeof(char)*(strlen(c_output_dir_name)+strlen("cooccurence")+2));
-    sprintf(c_output_file_name, "%s/cooccurence",c_output_dir_name);
+    c_output_file_name = (char*)malloc(sizeof(char)*(strlen(c_output_dir_name)+strlen("cooccurrence")+2));
+    sprintf(c_output_file_name, "%s/cooccurrence",c_output_dir_name);
     
     /* check whether input file exists */
     is_file(c_input_file_name);

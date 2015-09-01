@@ -40,7 +40,7 @@ int run() {
     int nrow = 0;
     unsigned long long nonZeroNum = 0;
     double start = REDSVD::Util::getSec();
-    // read and store cooccurence data
+    // read and store cooccurrence data
     cooccur_t data;
     // vector to store rowsum
     std::vector<float> rowsum;
@@ -72,9 +72,9 @@ int run() {
     // get back at the beginning of the file
     fseek(fin, 0, SEEK_SET);
     
-    if (verbose) fprintf(stderr, "Storing cooccurence matrix in memory...");
+    if (verbose) fprintf(stderr, "Storing cooccurrence matrix in memory...");
 
-    // store cooccurence in Eigen sparse matrix object
+    // store cooccurrence in Eigen sparse matrix object
     REDSVD::SMatrixXf A;
     A.resize(nrow, maxid+1);
     A.reserve(nonZeroNum);
@@ -151,17 +151,17 @@ int main(int argc, char **argv) {
 
     /* check whether input directory exists */
     is_directory(c_input_dir_name);
-    c_input_file_name = (char*)malloc(sizeof(char)*(strlen(c_input_dir_name)+strlen("cooccurence.bin")+2));
-    sprintf(c_input_file_name, "%s/cooccurence.bin",c_input_dir_name);
+    c_input_file_name = (char*)malloc(sizeof(char)*(strlen(c_input_dir_name)+strlen("cooccurrence.bin")+2));
+    sprintf(c_input_file_name, "%s/cooccurrence.bin",c_input_dir_name);
     
     /* check whether cooccurrence.bin exists */
     is_file( c_input_file_name );
     
     /* set the optimal number of threads */
     num_threads = MultiThread::optimal_nb_thread(num_threads, 1, num_threads);
-    if (verbose) fprintf(stderr, "number of pthreads = %d\n", num_threads);
     // set threads
     Eigen::setNbThreads(num_threads);
+    if (verbose) fprintf(stderr, "number of pthreads = %d\n", Eigen::nbThreads());
 
     /* perform PCA */
     run();
