@@ -195,7 +195,7 @@ An exploratory tool to evaluate word embeddings quality.
 The user should supply the file containing the word embeddings and its corresponding vocabulary.
 By default, this tool runs in interactive mode. Otherwise, a file containing a list of words can be provided. 
 
-`embeddings` options:
+`neighbors` options:
 * `-word-file <file>`: File containing word embeddings to evaluate
 * `-vocab-file <file>`: File containing word vocabulary
 * `-list-file <file>`: File containing a list of words from which the nearest neighbors will be computed, otherwise interactive mode
