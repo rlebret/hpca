@@ -1,4 +1,4 @@
-**hpca** provides an efficient implementation of the Hellinger PCA for computing word embeddings.
+**hpca** is a C++ toolkit providing an efficient implementation of the Hellinger PCA for computing word embeddings.
 See the [EACL 2014 paper](http://lebret.ch/wp-content/uploads/2014/03/eacl2014.pdf) for more details.
 
 ## PREREQUISITES
@@ -29,7 +29,7 @@ See the [EACL 2014 paper](http://lebret.ch/wp-content/uploads/2014/03/eacl2014.p
 
 ## GETTING WORD EMBEDDINGS
 
-This package includes 6 different tools: `preprocess`, `vocab`, `cooccurrence`, `pca`, `embeddings` and `eval`.
+This package includes 7 different tools: `preprocess`, `vocab`, `cooccurrence`, `pca`, `embeddings`, `eval` and `neighbors`.
 
 ### Corpus preprocessing 
 
@@ -170,7 +170,7 @@ It contains the following evaluation datasets:
 * [The Google Semantic Analogies Dataset](http://arxiv.org/abs/1301.3781)
 
 `eval` options:
-* `-input-file <file>`: File containing word embeddings to evaluate
+* `-word-file <file>`: File containing word embeddings to evaluate
 * `-vocab-file <file>`: File containing word vocabulary
 * `-lower <int>`: Lowercased datasets? 0=off or 1=on (default)
 * `-threads <int>`: Number of threads; default 8
@@ -183,11 +183,30 @@ It contains the following evaluation datasets:
 
 **Example**:
 ```
-eval -input-file words.txt -vocab-file target_vocab.txt -ws353 1 -rg65 1 -rw 1 -syn 1 -sem 1 -verbose 1 > words-eval.txt
+eval -word-file words.txt -vocab-file target_vocab.txt -ws353 1 -rg65 1 -rw 1 -syn 1 -sem 1 -verbose 1 > words-eval.txt
 ```
 
 **NOTE**: To speed up the implementation of the analogies, candidate solutions come from a closed vocabulary.
 
+
+### Computing word embeddings nearest neighbors
+
+An exploratory tool to evaluate word embeddings quality. 
+The user should supply the file containing the word embeddings and its corresponding vocabulary.
+By default, this tool runs in interactive mode. Otherwise, a file containing a list of words can be provided. 
+
+`embeddings` options:
+* `-word-file <file>`: File containing word embeddings to evaluate
+* `-vocab-file <file>`: File containing word vocabulary
+* `-list-file <file>`: File containing a list of words from which the nearest neighbors will be computed, otherwise interactive mode
+* `-top <int>`: Number of nearest neighbors; default 10
+* `-threads <int>`: Number of threads; default 8
+* `-verbose <int>`: Set verbosity: 0=off or 1=on (default)
+
+**Example**:
+```
+neighbors -word-file words.txt -vocab-file target_vocab.txt -list-file words_list.txt -top 5 > nearest_neighbors.txt
+```
 
 ## FULL EXAMPLE
 

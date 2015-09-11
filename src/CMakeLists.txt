@@ -16,6 +16,7 @@ ADD_EXECUTABLE(cooccurrence cooccurrence.cpp)
 ADD_EXECUTABLE(pca pca.cpp)
 ADD_EXECUTABLE(embeddings embeddings.cpp)
 ADD_EXECUTABLE(eval eval.cpp)
+ADD_EXECUTABLE(neighbors neighbors.cpp)
 
 
 # Linking
@@ -37,7 +38,6 @@ TARGET_LINK_LIBRARIES( pca
                        redsvd
                        ${MATH_LIB}
                        ${ZLIB_LIBRARIES} )
-
 TARGET_LINK_LIBRARIES( embeddings
                        util
                        redsvd
@@ -48,6 +48,12 @@ TARGET_LINK_LIBRARIES( eval
                        redsvd
                        ${MATH_LIB}
                        ${ZLIB_LIBRARIES} )
+TARGET_LINK_LIBRARIES( neighbors
+                       util
+                       redsvd
+                       ${MATH_LIB}
+                       ${ZLIB_LIBRARIES} 
+                       )
 
 # Installing
 INSTALL(TARGETS preprocess DESTINATION bin)
@@ -56,6 +62,7 @@ INSTALL(TARGETS cooccurrence DESTINATION bin)
 INSTALL(TARGETS pca DESTINATION bin)
 INSTALL(TARGETS embeddings DESTINATION bin)
 INSTALL(TARGETS eval DESTINATION bin)
+INSTALL(TARGETS neighbors DESTINATION bin)
 
 
 

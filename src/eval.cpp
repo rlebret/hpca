@@ -422,7 +422,7 @@ int main(int argc, char **argv) {
         printf("\t-threads <int>\n");
         printf("\t\tNumber of threads; default 8\n");
         printf("\nExample usage:\n");
-        printf("./eval -input-file path_to_words -vocab-file path_to_vocab -ws353 1 -rg65 1 -rw 1 -syn 0 -sem 0\n\n");
+        printf("./eval -word-file path_to_words -vocab-file path_to_vocab -ws353 1 -rg65 1 -rw 1 -syn 0 -sem 0\n\n");
         return 0;
     }
     
