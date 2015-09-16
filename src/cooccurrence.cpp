@@ -487,6 +487,7 @@ int main(int argc, char **argv) {
     if ((i = find_arg((char *)"-upper-bound", argc, argv)) > 0) upper_bound = atof(argv[i + 1]);
     if ((i = find_arg((char *)"-lower-bound", argc, argv)) > 0) lower_bound = atof(argv[i + 1]);
     if ((i = find_arg((char *)"-cxt-size", argc, argv)) > 0) cxt_size = atoi(argv[i + 1]);
+    if ((i = find_arg((char *)"-dyn-cxt", argc, argv)) > 0) dyn_cxt = atoi(argv[i + 1]);
     if ((i = find_arg((char *)"-memory", argc, argv)) > 0) memory_limit = atof(argv[i + 1]);
     if ((i = find_arg((char *)"-threads", argc, argv)) > 0) num_threads = atoi(argv[i + 1]);
     if ((i = find_arg((char *)"-output-dir", argc, argv)) > 0) strcpy(c_output_dir_name, argv[i + 1]);
