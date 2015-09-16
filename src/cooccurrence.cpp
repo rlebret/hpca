@@ -506,6 +506,26 @@ int main(int argc, char **argv) {
     /* check whether vocab file exists */
     is_file(c_vocab_file_name);
     
+    /* check parameters */
+    if ( (upper_bound<0) || (upper_bound>1) ){
+        throw std::runtime_error("-upper-bound must be a value between 0 and 1 !!");
+    }
+    if ( (lower_bound<0) || (lower_bound>1) ){
+        throw std::runtime_error("-lower-bound must be a value between 0 and 1 !!");
+    }
+    if ( upper_bound<=lower_bound ){
+        throw std::runtime_error("-lower-bound value must be lower than -upper-bound value !!");
+    }
+    if ( memory_limit<=0 ){
+        throw std::runtime_error("-memory must be a positive integer (number of GB) !!");
+    }
+    if ( cxt_size<=0 ){
+        throw std::runtime_error("-cxt-size must be a positive integer !!");
+    }
+    if ( min_freq<=0 ){
+        throw std::runtime_error("-min-freq must be a positive integer !!");
+    }
+
     run();
 
     /* write out options */

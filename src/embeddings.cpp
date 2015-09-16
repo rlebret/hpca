@@ -203,6 +203,9 @@ int main(int argc, char **argv) {
     if ( (eig<0) || (eig>1) ){
         throw std::runtime_error("-eig must be a value between 0 and 1 !!");
     }
+    if ( dim<=0 ){
+        throw std::runtime_error("-dim must be a positive integer!!");
+    }
 
     /* create output filenames */
     c_input_file_U_name = (char*)malloc(sizeof(char)*(strlen(c_input_dir_name)+strlen("svd.U")+2));

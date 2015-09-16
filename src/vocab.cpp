@@ -23,6 +23,7 @@
 #include <cstdlib>
 #include <cstring>
 #include <iostream>
+#include <libgen.h>
 
 // include utility headers
 #include "util/util.h"
@@ -233,6 +234,12 @@ int main(int argc, char **argv) {
     if ((i = find_arg((char *)"-vocab-file", argc, argv)) > 0) strcpy(c_vocab_file_name, argv[i + 1]);
     else strcpy(c_vocab_file_name, (char *)"vocab.txt");
     
+    /* check whether input file exists */
+    is_file(c_input_file_name);
+
+    /* check whether output directory for vocab file exists */
+    is_directory(dirname(c_vocab_file_name));
+
     run();
     
     // free

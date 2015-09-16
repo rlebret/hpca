@@ -18,6 +18,7 @@
 // along with HPCA. If not, see <http://www.gnu.org/licenses/>.
 
 #include <cstdlib>
+#include <stdexcept>
 
 // include utility headers
 #include "util/util.h"
@@ -68,7 +69,10 @@ int run() {
         }
         s+=data.val;
     }
-    if (verbose) fprintf(stderr, "# of words:%d, # of context words:%d, # of non-zero entries:%lld\n", nrow, maxid, nonZeroNum);
+    if (verbose) fprintf(stderr, "# of words:%d, # of context words:%d, # of non-zero entries:%lld\n", nrow, maxid+1, nonZeroNum);
+    if (rank>maxid){
+        throw std::runtime_error("-rank must be lower than the number of context words!!");
+    }
     // get back at the beginning of the file
     fseek(fin, 0, SEEK_SET);
     
@@ -156,7 +160,12 @@ int main(int argc, char **argv) {
     
     /* check whether cooccurrence.bin exists */
     is_file( c_input_file_name );
-    
+
+    /* check rank value */
+    if ( rank<=0 ){
+        throw std::runtime_error("-rank must be a positive integer!!");
+    }
+
     /* set the optimal number of threads */
     num_threads = MultiThread::optimal_nb_thread(num_threads, 1, num_threads);
     // set threads
