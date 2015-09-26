@@ -56,10 +56,10 @@ Hashtable::~Hashtable()
 
 /* Hash a string for a particular hash table. */
 long int const Hashtable::hash( const char *key ) {
- 
+
 	unsigned long int hashval = 0;
 	int i = 0;
- 
+
 	/* Convert our string to an integer */
 	while( hashval < ULONG_MAX && i < strlen( key ) ) {
 		hashval = hashval << 8;
@@ -69,7 +69,7 @@ long int const Hashtable::hash( const char *key ) {
 
 	return hashval % hash_size_;
 }
- 
+
 
 /* Insert a key into a hash table. */
 long int const Hashtable::insert( const char *key ) {
@@ -91,7 +91,7 @@ long int const Hashtable::insert( const char *key ) {
   bin = hash(key);
   while (hash_[bin] != -1) bin = (bin + 1) % hash_size_;
   hash_[bin] = size_ - 1;
-  
+
   return size_ - 1;
 }
 
@@ -164,6 +164,12 @@ void Hashtable::sort() {
 void Hashtable::print(const char *filename){
   int i;
   FILE * fout = fopen(filename, "wb");
+  if (fout == NULL){
+    std::string error_msg = std::string("Cannot open file ")
+                          + std::string(filename)
+                          + std::string(" !!!");
+    throw std::runtime_error(error_msg);
+  }
   for (i = 0; i < size_; i++)
     fprintf(fout, "%s %d\n", table_[i].key, table_[i].value);
   fclose(fout);
