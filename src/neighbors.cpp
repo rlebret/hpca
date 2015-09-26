@@ -55,7 +55,7 @@ class CompareIndicesByAnotherVectorValues{
     public:
         bool operator() (const int& a, const int& b) const { return (_values)[a] < (_values)[b]; }
 };
-    
+
 
 std::vector<int> ordered(Eigen::VectorXf& values) {
     std::vector<int> indices(values.size());
@@ -79,10 +79,10 @@ void readMatrix(const char *filename, Eigen::MatrixXf& result)
     // get number of rows from file
     const int cols = matfile.number_of_column(' ');
     if (verbose) fprintf(stderr, "words vector size = %d\n",cols);
-    
+
     // opening file
     matfile.open();
-    
+
     // Populate matrix with numbers.
     result.resize(rows,cols);
     char *line=NULL;
@@ -109,7 +109,7 @@ void readMatrix(const char *filename, Eigen::MatrixXf& result)
 
 /* load vocabulary */
 void getvocab(){
-    
+
     File fp((std::string(c_vocab_file_name)));
     vocab_size = fp.number_of_line();
     // create vocab
@@ -147,11 +147,11 @@ void getnn(FILE* fout, Eigen::MatrixXf m, const int idx){
 int main(int argc, char **argv) {
     int i;
     int interact=false;
-    
-    c_word_file_name = (char*)malloc(sizeof(char) * MAX_PATH_NAME + MAX_FILE_NAME);
-    c_list_file_name = (char*)malloc(sizeof(char) * MAX_PATH_NAME + MAX_FILE_NAME);
-    c_vocab_file_name = (char*)malloc(sizeof(char) * MAX_PATH_NAME + MAX_FILE_NAME);
-    
+
+    c_word_file_name = (char*)malloc(sizeof(char) * MAX_FULLPATH_NAME);
+    c_list_file_name = (char*)malloc(sizeof(char) * MAX_FULLPATH_NAME);
+    c_vocab_file_name = (char*)malloc(sizeof(char) * MAX_FULLPATH_NAME);
+
     if (argc == 1) {
         printf("HPCA: Hellinger PCA for Word Embeddings, nearest neighbors\n");
         printf("Author: Remi Lebret (remi@lebret.ch)\n\n");
@@ -172,7 +172,7 @@ int main(int argc, char **argv) {
         printf("./eval -word-file path_to_words -vocab-file path_to_vocab -top 10\n\n");
         return 0;
     }
-    
+
     if ((i = find_arg((char *)"-verbose", argc, argv)) > 0) verbose = atoi(argv[i + 1]);
     if ((i = find_arg((char *)"-word-file", argc, argv)) > 0) strcpy(c_word_file_name, argv[i + 1]);
     if ((i = find_arg((char *)"-list-file", argc, argv)) > 0) strcpy(c_list_file_name, argv[i + 1]);
@@ -180,7 +180,7 @@ int main(int argc, char **argv) {
     if ((i = find_arg((char *)"-vocab-file", argc, argv)) > 0) strcpy(c_vocab_file_name, argv[i + 1]);
     if ((i = find_arg((char *)"-top", argc, argv)) > 0) top = atoi(argv[i + 1]);
     if ((i = find_arg((char *)"-threads", argc, argv)) > 0) num_threads = atoi(argv[i + 1]);
-    
+
 
     if (verbose){
         fprintf(stderr, "HPCA: Hellinger PCA for Word Embeddings\n");
@@ -199,14 +199,14 @@ int main(int argc, char **argv) {
     /* check whether files exist */
     is_file(c_word_file_name);
     is_file(c_vocab_file_name);
-    
+
     /* get vocabulary */
     getvocab();
-    
+
     /* get words */
     Eigen::MatrixXf words;
     readMatrix(c_word_file_name, words);
-    
+
     int idx;
     fprintf(stderr, "---------------------------------------\n");
     if (interact){

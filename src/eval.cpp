@@ -56,7 +56,7 @@
 
 // define global variables
 int verbose=true;
-int lower=true; 
+int lower=true;
 int num_threads=8;
 char *c_word_file_name, *c_vocab_file_name;
 // variable for handling vocab
@@ -71,8 +71,8 @@ class CompareIndicesByAnotherVectorValues{
     public:
         bool operator() (const int& a, const int& b) const { return (*_values)[a] > (*_values)[b]; }
 };
-    
-    
+
+
 std::vector<float> rank(std::vector<float>& values, std::vector<int>& indices){
     std::vector<float> r(values.size());
     int i=0;
@@ -85,7 +85,7 @@ std::vector<float> rank(std::vector<float>& values, std::vector<int>& indices){
         if ( n>0 ){ // found equal values, update rank.
             const float newrank = (float)(s+i)/(n+1);
             for (int j=(i-n); j<=i; j++) r[j] = newrank;
-            n=0; s=0; 
+            n=0; s=0;
         }else{ r[i]=i; }
         i++;
         if (i==r.size()) break;
@@ -114,10 +114,10 @@ void readMatrix(const char *filename, Eigen::MatrixXf& result)
     // get number of rows from file
     const int cols = matfile.number_of_column(' ');
     if (verbose) fprintf(stderr, "words vector size = %d\n",cols);
-    
+
     // opening file
     matfile.open();
-    
+
     // Populate matrix with numbers.
     result.resize(rows,cols);
     char *line=NULL;
@@ -152,7 +152,7 @@ float cossim(const Eigen::VectorXf& a, const Eigen::VectorXf& b){
 
 /* load vocabulary */
 void getvocab(){
-    
+
     File fp((std::string(c_vocab_file_name)));
     vocab_size = fp.number_of_line();
     // create vocab
@@ -186,7 +186,7 @@ float const getstd(const std::vector<float>& vec, const float mean){
     float s=0;
     for (int i=0; i<nrow; i++)
         s += powf((vec[i]-mean), 2.0);
-   
+
     const float variance = s/(nrow-1);
     return sqrtf(variance);
 }
@@ -195,14 +195,14 @@ float const getstd(const std::vector<float>& vec, const float mean){
 void runsimilarity( const Eigen::MatrixXf& words
                   , char * data
                   , unsigned int length){
-    
+
     // get data
     char * ptr_data = data;
     char * buffer = (char*)malloc(MAX_TOKEN);
     char token1[MAX_TOKEN];
     char token2[MAX_TOKEN];
     float coeff;
-    
+
     int itr=0;
     int i,j;
     std::vector<int> idx1, idx2;
@@ -213,7 +213,7 @@ void runsimilarity( const Eigen::MatrixXf& words
         if (lower){
             lowercase(token1);
             lowercase(token2);
-        } 
+        }
         if ( ((i = hash->value(token1))!=-1) && ((j = hash->value(token2))!=-1) ){
             idx1.push_back(i);
             idx2.push_back(j);
@@ -224,7 +224,7 @@ void runsimilarity( const Eigen::MatrixXf& words
     }
     free(buffer);
 
-    
+
     const long long int npairs=gold.size();
     if (verbose) fprintf(stderr, "number of pairs = %d\n",npairs);
     if (npairs>0){
@@ -237,13 +237,13 @@ void runsimilarity( const Eigen::MatrixXf& words
             const float ratio = 1./sqrtf(a2*b2);
             scores[i] = ab * ratio;
         }
-        
+
         // Pearson's correlation
         // get mean
         const float cossim_mean = getmean(scores);
         // get standard deviation
         const float cossim_std = getstd(scores, cossim_mean);
-        
+
         // get gold scores
         const float  gold_mean = getmean(gold);
         const float  gold_std = getstd(gold, gold_mean);
@@ -252,14 +252,14 @@ void runsimilarity( const Eigen::MatrixXf& words
         float r=0;
         for (int i=0; i<npairs; i++){
             r += (scores[i]-cossim_mean)*(gold[i]-gold_mean);
-            
+
         }
         r/=((npairs-1)*cossim_std*gold_std);
-        
+
         //  Spearman's correlation
         std::vector<int> cossimsortidx = ordered(&scores);
         std::vector<int> goldsortidx = ordered(&gold);
-        
+
         // get ranks
         std::vector<float> cossimrank = rank(scores, cossimsortidx);
         std::vector<float> goldrank = rank(gold, goldsortidx);
@@ -272,7 +272,7 @@ void runsimilarity( const Eigen::MatrixXf& words
             sum += s*s;
         }
         const float p = 1-(6*sum)/(npairs*(npairs*npairs-1));
-        
+
         fprintf(stdout, "Pearson's correlation = %f\n",r);
         fprintf(stdout, "Spearman's correlation = %f\n",p);
         if (verbose && !isatty(STDOUT_FILENO)){
@@ -287,7 +287,7 @@ void runsimilarity( const Eigen::MatrixXf& words
 float const runanalogy( const Eigen::MatrixXf& words
                        , char * data
                        , unsigned int length){
-    
+
     // get data
     char * ptr_data = data;
     char * buffer = (char*)malloc(MAX_TOKEN);
@@ -297,21 +297,21 @@ float const runanalogy( const Eigen::MatrixXf& words
     char token4[MAX_TOKEN];
     int i,j,k,l;
     int itr=0;
-    
+
     std::vector<int> a,b,c,d,idx;
     while ((buffer = string_copy(buffer, ptr_data, &itr, '\n')) != '\0') {
-        sscanf(buffer, "%s %s %s %s", token1, token2, token3, token4);        
+        sscanf(buffer, "%s %s %s %s", token1, token2, token3, token4);
         // lowercase?
         if (lower){
             lowercase(token1);
             lowercase(token2);
             lowercase(token3);
             lowercase(token4);
-        } 
+        }
         if (   ((i = hash->value(token1))!=-1)
             && ((j = hash->value(token2))!=-1)
             && ((k = hash->value(token3))!=-1)
-            && ((l = hash->value(token4))!=-1)  
+            && ((l = hash->value(token4))!=-1)
             ){
             a.push_back(i);
             b.push_back(j);
@@ -326,11 +326,11 @@ float const runanalogy( const Eigen::MatrixXf& words
         if (itr==length) break;
     }
     free(buffer);
-    
+
     // get unique indices
     std::vector<int>::iterator it;
     it = std::unique (idx.begin(), idx.end());
-    
+
     const int n=a.size();
     const int nword=idx.size();
     if (verbose){
@@ -340,7 +340,7 @@ float const runanalogy( const Eigen::MatrixXf& words
     if (n>0){
         // define vector to store distances
         std::vector<float> distances(nword);
-        
+
         // define temp matrices
         Eigen::MatrixXf A(words.cols(),n);
         Eigen::MatrixXf B(words.cols(),n);
@@ -357,9 +357,9 @@ float const runanalogy( const Eigen::MatrixXf& words
 
         // cosine similarity
         Eigen::MatrixXf y = D * (B - A + C);
-        
+
         // get accuracy
-        int acc=0;    
+        int acc=0;
         // loop over all words
         for (int j=0; j<n; j++){
             float maxval=0;
@@ -393,10 +393,10 @@ int main(int argc, char **argv) {
     int ws=true;
     int syn=true;
     int sem=true;
-    
-    c_word_file_name = (char*)malloc(sizeof(char) * MAX_PATH_NAME + MAX_FILE_NAME);
-    c_vocab_file_name = (char*)malloc(sizeof(char) * MAX_PATH_NAME + MAX_FILE_NAME);
-    
+
+    c_word_file_name = (char*)malloc(sizeof(char) * MAX_FULLPATH_NAME);
+    c_vocab_file_name = (char*)malloc(sizeof(char) * MAX_FULLPATH_NAME);
+
     if (argc == 1) {
         printf("HPCA: Hellinger PCA for Word Embeddings, embeddings evaluation\n");
         printf("Author: Remi Lebret (remi@lebret.ch)\n\n");
@@ -425,7 +425,7 @@ int main(int argc, char **argv) {
         printf("./eval -word-file path_to_words -vocab-file path_to_vocab -ws353 1 -rg65 1 -rw 1 -syn 0 -sem 0\n\n");
         return 0;
     }
-    
+
     if ((i = find_arg((char *)"-verbose", argc, argv)) > 0) verbose = atoi(argv[i + 1]);
     if ((i = find_arg((char *)"-ws353", argc, argv)) > 0) ws = atoi(argv[i + 1]);
     if ((i = find_arg((char *)"-rg65", argc, argv)) > 0) rg = atoi(argv[i + 1]);
@@ -436,7 +436,7 @@ int main(int argc, char **argv) {
     if ((i = find_arg((char *)"-vocab-file", argc, argv)) > 0) strcpy(c_vocab_file_name, argv[i + 1]);
     if ((i = find_arg((char *)"-lower", argc, argv)) > 0) lower = atoi(argv[i + 1]);
     if ((i = find_arg((char *)"-threads", argc, argv)) > 0) num_threads = atoi(argv[i + 1]);
-    
+
     if (verbose){
         fprintf(stderr, "HPCA: Hellinger PCA for Word Embeddings\n");
         fprintf(stderr, "Author: Remi Lebret (remi@lebret.ch)\n");
@@ -451,18 +451,18 @@ int main(int argc, char **argv) {
     // set threads
     Eigen::setNbThreads(num_threads);
 
-    
+
     /* check whether files exist */
     is_file(c_word_file_name);
     is_file(c_vocab_file_name);
-    
+
     /* get vocabulary */
     getvocab();
-    
+
     /* get words */
     Eigen::MatrixXf words;
     readMatrix(c_word_file_name, words);
-    
+
     if (ws){
         fprintf(stdout, "\n---------------------------------------\n");
         fprintf(stdout, "WordSim-353 Dataset\n");
@@ -470,7 +470,7 @@ int main(int argc, char **argv) {
         if (verbose && !isatty(STDOUT_FILENO)){
             fprintf(stderr, "\n---------------------------------------\n");
             fprintf(stderr, "WordSim-353 Dataset\n");
-            fprintf(stderr, "---------------------------------------\n"); 
+            fprintf(stderr, "---------------------------------------\n");
         }
         runsimilarity( words, wordsim353_txt, wordsim353_txt_len);
     }
@@ -508,7 +508,7 @@ int main(int argc, char **argv) {
         fprintf(stdout, "\n---------------------------------------\n");
         fprintf(stdout, "Microsoft Research Syntactic Analogies\n");
         fprintf(stdout, "---------------------------------------\n");
-        
+
         float acc=0.0;
         if (verbose && !isatty(STDOUT_FILENO)) fprintf(stderr,"---- adjective-to-adverb analogies ----\n");
         fprintf(stdout,"---- adjective-to-adverb analogies ----\n");
@@ -537,7 +537,7 @@ int main(int argc, char **argv) {
         if (verbose && !isatty(STDOUT_FILENO)) fprintf(stderr,"---- plural-verbs analogies ----\n");
         fprintf(stdout,"---- plural-verbs analogies ----\n");
         acc += runanalogy( words, question_gram9_plural_verbs_txt, question_gram9_plural_verbs_txt_len);
-        
+
         if (verbose && !isatty(STDOUT_FILENO)) fprintf(stderr,"\nSyntactic accuracy = %.4f\n", acc/9);
         fprintf(stdout,"\nSyntactic accuracy = %.4f\n", acc/9);
     }
@@ -550,7 +550,7 @@ int main(int argc, char **argv) {
         fprintf(stdout, "\n---------------------------------------\n");
         fprintf(stdout, "Google Semantic Analogies\n");
         fprintf(stdout, "---------------------------------------\n");
-        
+
         float acc=0.0;
 
         if (verbose && !isatty(STDOUT_FILENO)) fprintf(stderr,"---- capital-common-countries analogies ----\n");
@@ -568,7 +568,7 @@ int main(int argc, char **argv) {
         if (verbose && !isatty(STDOUT_FILENO)) fprintf(stderr,"---- family analogies ----\n");
         fprintf(stdout,"---- family analogies ----\n");
         acc += runanalogy( words, question_family_txt, question_family_txt_len );
-        
+
         if (verbose && !isatty(STDOUT_FILENO)) fprintf(stderr,"\nSemantic accuracy = %.4f\n", acc/5);
         fprintf(stdout,"\nSemantic accuracy = %.4f\n", acc/5);
     }

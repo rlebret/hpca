@@ -50,7 +50,8 @@
 /* Thus the effective number of characters in a filename is */
 /* MAX_FILENAME-1 */
 #define MAX_FILE_NAME          65
-#define MAX_PATH_NAME          100
+#define MAX_PATH_NAME          235
+#define MAX_FULLPATH_NAME      300
 #define MAX_TOKEN              100
 #define MAX_TOKEN_PER_LINE     512
 #define MAX_STRING_LENGTH      2000

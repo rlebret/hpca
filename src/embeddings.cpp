@@ -53,11 +53,11 @@ void readMatrix(const char *filename, Eigen::MatrixXf& result)
         std::string err = "number of columns in " + std::string(filename) + " = " + typeToString(cols) + " --> choose a lower word vector dimension !!!";
         throw std::runtime_error(err);
     }
-    
+
     if (verbose) fprintf(stderr, "reading singular vectors in %s\n", filename);
     // opening file
     matfile.open();
-    
+
     // Populate matrix with numbers.
     result.resize(rows,dim);
     char *line=NULL;
@@ -95,7 +95,7 @@ void readVector(const char *filename, Eigen::VectorXf& result)
     if (verbose) fprintf(stderr, "reading singular values in %s\n", filename);
     // opening file
     vecfile.open();
-    
+
     // Populate matrix with numbers.
     result.resize(dim);
     char *line=NULL;
@@ -115,17 +115,17 @@ void readVector(const char *filename, Eigen::VectorXf& result)
 };
 
 int run() {
-    
+
     // read U matrix from file
     Eigen::MatrixXf U;
     readMatrix(c_input_file_U_name,U);
     // read S matrix from file
     Eigen::VectorXf S;
     readVector(c_input_file_S_name,S);
-    
+
     Eigen::MatrixXf embeddings = U * S.asDiagonal();
     if (norm) embeddings.rowwise().normalize();
-    
+
     // write out embeddings
     std::string output_name = std::string(c_input_dir_name) + "/" + std::string(c_output_file_name);
     if (verbose) fprintf(stderr, "writing word embeddings in %s\n", output_name.c_str());
@@ -140,7 +140,7 @@ int run() {
         fprintf(outfp, "\n");
     }
     fclose(outfp);
-    
+
     return 0;
 }
 
@@ -148,9 +148,9 @@ int run() {
 
 int main(int argc, char **argv) {
     int i;
-    c_input_dir_name = (char*)malloc(sizeof(char) * MAX_FILE_NAME);
+    c_input_dir_name = (char*)malloc(sizeof(char) * MAX_PATH_NAME);
     c_output_file_name = (char*)malloc(sizeof(char) * MAX_FILE_NAME);
-    
+
     if (argc == 1) {
         printf("HPCA: Hellinger PCA for Word Embeddings, embeddings computation\n");
         printf("Author: Remi Lebret (remi@lebret.ch)\n\n");
@@ -166,14 +166,14 @@ int main(int argc, char **argv) {
         printf("\t-dim <int>\n");
         printf("\t\tWord vector dimension; default 100\n");
         printf("\t-norm <int>\n");
-        printf("\t\tAre vectors normalized to unit length? 0=off or 1=on (default is 0)\n");        
+        printf("\t\tAre vectors normalized to unit length? 0=off or 1=on (default is 0)\n");
         printf("\t-threads <int>\n");
         printf("\t\tNumber of threads; default 8\n");
         printf("\nExample usage:\n");
         printf("./embeddings -input-dir path_to_svd_files -output-name words.txt -eig 0.0 -dim 100 -norm 0\n\n");
         return 0;
     }
-    
+
     if ((i = find_arg((char *)"-verbose", argc, argv)) > 0) verbose = atoi(argv[i + 1]);
     if ((i = find_arg((char *)"-norm", argc, argv)) > 0) norm = atoi(argv[i + 1]);
     if ((i = find_arg((char *)"-dim", argc, argv)) > 0) dim = atoi(argv[i + 1]);
@@ -195,10 +195,10 @@ int main(int argc, char **argv) {
     if (verbose) fprintf(stderr, "number of pthreads = %d\n", num_threads);
     // set threads
     Eigen::setNbThreads(num_threads);
-    
+
     /* check whether input directory exists */
     is_directory(c_input_dir_name);
-    
+
     /* check parameters */
     if ( (eig<0) || (eig>1) ){
         throw std::runtime_error("-eig must be a value between 0 and 1 !!");
@@ -212,11 +212,11 @@ int main(int argc, char **argv) {
     c_input_file_S_name = (char*)malloc(sizeof(char)*(strlen(c_input_dir_name)+strlen("svd.S")+2));
     sprintf(c_input_file_U_name, "%s/svd.U",c_input_dir_name);
     sprintf(c_input_file_S_name, "%s/svd.S",c_input_dir_name);
-    
+
     /* check whether files exist */
     is_file( c_input_file_U_name );
     is_file( c_input_file_S_name );
-    
+
     /* compute embeddings */
     run();
 

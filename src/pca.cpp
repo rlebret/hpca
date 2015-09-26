@@ -35,7 +35,7 @@
 int verbose = true; // true or false
 int num_threads=8;
 int rank = 300;
-char *c_input_dir_name, *c_input_file_name, *c_output_name;
+char *c_input_dir_name, *c_input_file_name;
 
 int run() {
     int nrow = 0;
@@ -75,7 +75,7 @@ int run() {
     }
     // get back at the beginning of the file
     fseek(fin, 0, SEEK_SET);
-    
+
     if (verbose) fprintf(stderr, "Storing cooccurrence matrix in memory...");
 
     // store cooccurrence in Eigen sparse matrix object
@@ -98,7 +98,7 @@ int run() {
         A.insertBack(nrow, data.idx2) = sqrtf(data.val/(rowsum[nrow]+EPSILON));
     }
     A.finalize();
-    
+
     // closing file
     fclose(fin);
 
@@ -108,11 +108,11 @@ int run() {
     start = REDSVD::Util::getSec();
     REDSVD::RedSVD svdOfA(A, rank);
     if (verbose) fprintf(stderr, "done in %.2f.\n",REDSVD::Util::getSec() - start);
-    
+
     // set output name
     std::string output_name = std::string(c_input_dir_name) + "/svd";
     REDSVD::writeMatrix(output_name, svdOfA);
-    
+
     return 0;
 }
 
@@ -120,9 +120,8 @@ int run() {
 
 int main(int argc, char **argv) {
     int i;
-    c_input_dir_name = (char*)malloc(sizeof(char) * MAX_FILE_NAME);
-    c_output_name = (char*)malloc(sizeof(char) * MAX_FILE_NAME);
-    
+    c_input_dir_name = (char*)malloc(sizeof(char) * MAX_PATH_NAME);
+
     if (argc == 1) {
         printf("HPCA: Hellinger PCA for Word Embeddings, performing randomized SVD \n");
         printf("Author: Remi Lebret (remi@lebret.ch)\n\n");
@@ -139,12 +138,12 @@ int main(int argc, char **argv) {
         printf("./pca -input-dir path_to_dir -rank 300\n\n");
         return 0;
     }
-    
+
     if ((i = find_arg((char *)"-verbose", argc, argv)) > 0) verbose = atoi(argv[i + 1]);
     if ((i = find_arg((char *)"-rank", argc, argv)) > 0) rank = atoi(argv[i + 1]);
     if ((i = find_arg((char *)"-threads", argc, argv)) > 0) num_threads = atoi(argv[i + 1]);
     if ((i = find_arg((char *)"-input-dir", argc, argv)) > 0) strcpy(c_input_dir_name, argv[i + 1]);
-        
+
     if (verbose){
         fprintf(stderr, "HPCA: Hellinger PCA for Word Embeddings\n");
         fprintf(stderr, "Author: Remi Lebret (remi@lebret.ch)\n");
@@ -157,7 +156,7 @@ int main(int argc, char **argv) {
     is_directory(c_input_dir_name);
     c_input_file_name = (char*)malloc(sizeof(char)*(strlen(c_input_dir_name)+strlen("cooccurrence.bin")+2));
     sprintf(c_input_file_name, "%s/cooccurrence.bin",c_input_dir_name);
-    
+
     /* check whether cooccurrence.bin exists */
     is_file( c_input_file_name );
 
@@ -177,7 +176,6 @@ int main(int argc, char **argv) {
 
     /* release memory */
     free(c_input_dir_name);
-    free(c_output_name);
     free(c_input_file_name);
 
     if (verbose){

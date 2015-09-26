@@ -62,7 +62,7 @@ int merge_files(const int nbthread) {
     // get total number of files
     int num=0;
     for (int f=0; f<nbthread; f++) num += nfile[f];
-    char tmp_output_file_name[MAX_FILE_NAME];
+    char tmp_output_file_name[MAX_FULLPATH_NAME];
     // allocation
     fid = (FILE**)calloc(num, sizeof(FILE*));
     pq = (cooccur_id_t*)malloc(num * sizeof(cooccur_id_t));
@@ -85,7 +85,7 @@ int merge_files(const int nbthread) {
             insert_pq(pq,new_id,++i);
         }
     }
-    
+
     /* Pop top node, save it in old to see if the next entry is a duplicate */
     size = num;
     old_id = pq[0];
@@ -97,13 +97,13 @@ int merge_files(const int nbthread) {
         new_id.id = i;
         insert_pq(pq, new_id, size);
     }
-    
+
     /* Repeatedly pop top node and fill priority queue until files have reached EOF */
     while(size > 0) {
         if (!tokenfound[old_id.idx1]) tokenfound[old_id.idx1]=true; // set this token has found
         counter += merge_write(pq[0], &old_id, fout); // Only count the lines written to file, not duplicates
         if((counter%100000) == 0) if(verbose) fprintf(stderr,"\033[43G%lld cooccurrences.",counter);
-        i = pq[0].id;        
+        i = pq[0].id;
 
         delete_pq(pq, size);
         fread(&new_id, sizeof(cooccur_t), 1, fid[i]);
@@ -129,7 +129,7 @@ int merge_files(const int nbthread) {
             remove(tmp_output_file_name);
         }
     }
-    
+
     // release memory
     free(fid);
     free(pq);
@@ -139,11 +139,11 @@ int merge_files(const int nbthread) {
 
 /* load vocabulary */
 int get_vocab(){
-    
+
     char token[MAX_TOKEN];
     int freq;
     int i=0;
-    
+
     // open vocabulary file
     FILE *fp = fopen(c_vocab_file_name, "r");
     // get statistics on vocabulary
@@ -152,16 +152,16 @@ int get_vocab(){
         vocab_size++;
         ntoken+=freq;
     }
-    
+
     if (verbose){ // print out some statistics
         fprintf(stderr, "number of unique tokens                       = %d\n",vocab_size);
         fprintf(stderr, "total number of tokens in file                = %ld\n",ntoken);
         fprintf(stderr, "number of tokens to keep (>=%4d)             = %d\n",min_freq, Wid);
     }
-    
+
     // get back at the beginning of the file
     fseek(fp, 0, SEEK_SET);
-    
+
     // memory allocation
     float appearance_freq;
     const float ratio = 1.0/ntoken;
@@ -169,7 +169,7 @@ int get_vocab(){
     tokename = (char**) malloc(sizeof(char*)*vocab_size);
     tokenfound = (int*) malloc(sizeof(int)*vocab_size);
     for (int i=0; i<vocab_size; i++) tokenfound[i]=false;
-    
+
     // insert statistics on vocabulary
     while(fscanf(fp, "%s %d\n", token, &freq) != EOF){
         hash->insert(token, i);
@@ -180,22 +180,22 @@ int get_vocab(){
         if (appearance_freq>=lower_bound) Cid_lower++;
         i++;
     }
-    
+
     if (verbose) fprintf(stderr, "context vocabulary size [%.3e,%.3e] = %d\n",upper_bound, lower_bound, Cid_lower-Cid_upper);
-    
+
     fclose(fp);
-    
+
     return 0;
 }
 
 /* write out cooccurrence vocabularies */
 void write_vocab(){
-    
+
     char * c_output_word_name = (char*)malloc(sizeof(char)*(strlen(c_output_dir_name)+strlen("target_words.txt")+2));
     sprintf(c_output_word_name, "%s/target_words.txt",c_output_dir_name);
     char * c_output_context_name = (char*)malloc(sizeof(char)*(strlen(c_output_dir_name)+strlen("context_words.txt")+2));
     sprintf(c_output_context_name, "%s/context_words.txt",c_output_dir_name);
-    
+
     if (verbose){
         fprintf(stderr, "writing target words vocabulary in %s\n", c_output_word_name);
         fprintf(stderr, "writing context words vocabulary in %s\n", c_output_context_name);
@@ -203,7 +203,7 @@ void write_vocab(){
     // opening files
     FILE *fw = fopen(c_output_word_name, "w");
     FILE *fc = fopen(c_output_context_name, "w");
-    
+
     for (int i=0; i<vocab_size; i++){
         if (tokenfound[i]){
             fprintf(fw, "%s\n", tokename[i]);
@@ -215,7 +215,7 @@ void write_vocab(){
     //closing files
     fclose(fw);
     fclose(fc);
-    
+
     // release memory
     free(c_output_word_name);
     free(c_output_context_name);
@@ -223,11 +223,11 @@ void write_vocab(){
 
 /* add context */
 unsigned long long getcontext(cooccur_t *data, unsigned long long itr, const int* tokens, const int j, const int len){
-    
+
     int rightcxt = (j-cxt_size)>0 ? j-cxt_size : 0;
     int leftcxt = (j+cxt_size+1)<len ? j+cxt_size+1 : len;
     const int target = tokens[j];
-    
+
     // set dynamic context variables
     float weight, weight_itr;
     if (dyn_cxt){
@@ -248,7 +248,7 @@ unsigned long long getcontext(cooccur_t *data, unsigned long long itr, const int
         if (dyn_cxt)
             (k<j)? weight+=weight_itr : weight-=weight_itr;
     }
-    
+
     return itr;
 }
 
@@ -257,15 +257,15 @@ unsigned long long getcontext(cooccur_t *data, unsigned long long itr, const int
  * the worker
  **/
 void *cooccurrence( void *p ){
-    
+
     // get start & end for this thread
     Thread* thread = (Thread*)p;
     const long int start = thread->start();
     const long int end = thread->end();
     const long int nbop = (end-start)/100;
     // get output file name
-    char output_file_name[MAX_FILE_NAME];
-    
+    char output_file_name[MAX_FULLPATH_NAME];
+
     // attach thread to CPU
     if (thread->id() != -1){
         thread->set();
@@ -274,25 +274,25 @@ void *cooccurrence( void *p ){
     }else{
         sprintf(output_file_name, "%s-%ld", c_output_file_name, 0);
     }
-    
+
     // create output file
     int ftmp_itr=0;
-    char tmp_output_file_name[MAX_FILE_NAME];
+    char tmp_output_file_name[MAX_FULLPATH_NAME];
     sprintf(tmp_output_file_name,"%s_%04d.bin",output_file_name, ftmp_itr);
     if (verbose)  fprintf(stderr, "write in temporary files: %s_####.bin\n",output_file_name);
     FILE *ftmp = fopen(tmp_output_file_name, "wb");
-    
+
     // create struct to store cooccurrence
     cooccur_t * data = (cooccur_t*)malloc(sizeof(cooccur_t)*max_cooccur_size);
     unsigned long long data_itr=0;
-    const unsigned long long data_overflow = max_cooccur_size-cxt_size*2;
-    
+    const unsigned long long data_overflow = max_cooccur_size-(cxt_size*2);
+
     // open input file
     std::string input_file_name = std::string(c_input_file_name);
     File input_file(input_file_name);
     input_file.open();
     input_file.jump_to_position(start);
-    
+
     int k, itr=0;
     int line_size = MAX_TOKEN_PER_LINE;
     int *tokens = (int*)malloc(line_size*sizeof(int));
@@ -338,11 +338,11 @@ void *cooccurrence( void *p ){
 
     // closing input file
     input_file.close();
-    
+
     // free memory
     free(data);
     free(tokens);
-    
+
     // exit thread
     if ( thread->id()!= -1 ){
         nfile[thread->id()]=ftmp_itr+1;
@@ -351,7 +351,7 @@ void *cooccurrence( void *p ){
     }else{
         nfile[0]=ftmp_itr+1;
     }
-    
+
     return 0;
 }
 
@@ -363,18 +363,18 @@ int run(){
 
     // get vocabulary from file
     get_vocab();
-    
+
     // define input file
     std::string input_file_name = std::string(c_input_file_name);
     File input_file(input_file_name);
-    
+
     // get input file byte size
     long int fsize = input_file.size();
     if (verbose){
         fprintf(stderr, "number of byte in %s = %ld\n",c_input_file_name,fsize);
         fflush(stderr);
     }
-    
+
     // get optimal number of threads
     MultiThread threads( num_threads, 1, true, fsize, NULL, NULL);
     num_threads = threads.nb_thread();
@@ -386,13 +386,13 @@ int run(){
     max_cooccur_size = (unsigned long long) (0.7 * memory_limit * GIGAOCTET/(sizeof(cooccur_t)) / num_threads);
     // set number of file per thread
     nfile = (int*)calloc(num_threads, sizeof(int));
-    
+
     // launch threads
     threads.linear( cooccurrence, input_file.flines );
-    
+
     // merge temporary files
     merge_files(num_threads);
-    
+
     // write vocabularies
     write_vocab();
 
@@ -402,7 +402,7 @@ int run(){
     for (int i=0; i<vocab_size; i++) if (tokename[i]) free(tokename[i]);
     free(tokename);
     delete hash;
-    
+
     return 0;
 }
 
@@ -410,7 +410,7 @@ void write_options(){
 
     char *c_options_file_name = (char*)malloc(sizeof(char)*(strlen(c_output_dir_name)+strlen("options.txt")+1));
     sprintf(c_options_file_name, "%s/options.txt",c_output_dir_name);
-  
+
     FILE *fopt = fopen(c_options_file_name, "w");
 
     fprintf(fopt, "#######################\n");
@@ -439,10 +439,10 @@ void write_options(){
 
 int main(int argc, char **argv) {
     int i;
-    c_input_file_name = (char*)malloc(sizeof(char) * MAX_PATH_NAME+MAX_FILE_NAME);
-    c_vocab_file_name = (char*)malloc(sizeof(char) * MAX_PATH_NAME+MAX_FILE_NAME);
+    c_input_file_name = (char*)malloc(sizeof(char) * MAX_FULLPATH_NAME);
+    c_vocab_file_name = (char*)malloc(sizeof(char) * MAX_FULLPATH_NAME);
     c_output_dir_name = (char*)malloc(sizeof(char) * MAX_PATH_NAME);
-    
+
     if (argc == 1) {
         printf("HPCA: Hellinger PCA for Word Embeddings, get co-occurrence probability matrix\n");
         printf("Author: Remi Lebret (remi@lebret.ch)\n\n");
@@ -473,7 +473,7 @@ int main(int argc, char **argv) {
         printf("./cooccurrence -input-file data -vocab-file vocab.txt -output-dir path_to_dir -min-freq 100 -cxt-size 5 -dyn-cxt 1 -memory 4.0 -upper-bound 1.0 -lower-bound 0.00001 -verbose 1 -threads 4\n\n");
         return 0;
     }
-            
+
     if (verbose){
         fprintf(stderr, "HPCA: Hellinger PCA for Word Embeddings\n");
         fprintf(stderr, "Author: Remi Lebret (remi@lebret.ch)\n");
@@ -495,17 +495,17 @@ int main(int argc, char **argv) {
     if ((i = find_arg((char *)"-vocab-file", argc, argv)) > 0) strcpy(c_vocab_file_name, argv[i + 1]);
     else strcpy(c_vocab_file_name, (char *)"vocab");
     if ((i = find_arg((char *)"-input-file", argc, argv)) > 0) strcpy(c_input_file_name, argv[i + 1]);
-    
+
     /* check whether output directory exists */
     is_directory(c_output_dir_name);
     c_output_file_name = (char*)malloc(sizeof(char)*(strlen(c_output_dir_name)+strlen("cooccurrence")+2));
     sprintf(c_output_file_name, "%s/cooccurrence",c_output_dir_name);
-    
+
     /* check whether input file exists */
     is_file(c_input_file_name);
     /* check whether vocab file exists */
     is_file(c_vocab_file_name);
-    
+
     /* check parameters */
     if ( (upper_bound<0) || (upper_bound>1) ){
         throw std::runtime_error("-upper-bound must be a value between 0 and 1 !!");

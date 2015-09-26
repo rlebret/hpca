@@ -50,43 +50,43 @@ void *preprocess( void *p )
     const long int nbop = (end-start)/100;
     // get output file name
     std::string output_file_name = std::string(c_output_file_name);
-    
+
     // attach thread to CPU
     if (thread->id() != -1){
         thread->set();
         output_file_name += "-" + typeToString(thread->id());
         if (verbose) fprintf(stderr, "create pthread n°%ld, reading from position %ld to %ld\n",thread->id(), start, end-1);
-    }  
-    
+    }
+
     // create output file
     File output_file(output_file_name,zip);
     output_file.open("w");
-    
+
     // open input file
     std::string input_file_name = std::string(c_input_file_name);
     File input_file(input_file_name);
     input_file.open();
     input_file.jump_to_position(start);
-    
+
     char *line = NULL;
     long int position=input_file.position();
     int itr=0;
     if (verbose) loadbar(thread->id(), itr, 100);
     while ( position<end ){
-       
+
         // get the line
         line = input_file.getline();
-       
+
         // lowercase?
         if (lower) lowercase(line);
-        
+
         // replace digits?
         if (digit) replace_digit(line);
-        
+
         // write the preprocessed line
         output_file.write(line);
         output_file.write("\n");
-        
+
         // get current position in stream
         position = input_file.position();
         // display progress bar
@@ -103,7 +103,7 @@ void *preprocess( void *p )
     output_file.close();
     // close input file
     input_file.close();
-    
+
     // exit thread
     if ( thread->id()!= -1 ){
         pthread_exit( (void*)thread->id() );
@@ -112,9 +112,9 @@ void *preprocess( void *p )
 }
 
 int merge(const int nthreads){
-    
+
     if (verbose){ fprintf(stderr, "\nmerging files\n"); fflush(stderr);}
-    
+
     std::string output_file_name = std::string(c_output_file_name);
     std::string combined_file_name = output_file_name;
     if (zip){
@@ -143,9 +143,9 @@ int merge(const int nthreads){
             remove(thread_file_name.c_str());
         }
         combined_file.close();
-        
+
     }
-    
+
     return 0;
 }
 
@@ -153,32 +153,32 @@ int merge(const int nthreads){
  * Run preprocessing with multithreading
  **/
 int run() {
-    
+
     // define input file
     std::string input_file_name = std::string(c_input_file_name);
     File input_file(input_file_name);
-    
+
     // get input file byte size
     long int fsize = input_file.size();
     if (verbose) fprintf(stderr, "number of byte in %s = %ld\n",c_input_file_name,fsize);
-    
+
     MultiThread threads( num_threads, 1, true, fsize, NULL, NULL);
     if (verbose) fprintf(stderr, "number of pthreads = %d\n", threads.nb_thread());
     input_file.split(threads.nb_thread());
     threads.linear( preprocess, input_file.flines );
-    
+
     if (threads.nb_thread()>1){
         merge(threads.nb_thread());
     }else fprintf(stderr,"\n");
-    
+
     return 0;
 }
 
 int main(int argc, char **argv) {
     int i;
-    c_input_file_name = (char*)malloc(sizeof(char) * MAX_PATH_NAME+MAX_FILE_NAME);
-    c_output_file_name = (char*)malloc(sizeof(char) * MAX_PATH_NAME+MAX_FILE_NAME);
-    
+    c_input_file_name = (char*)malloc(sizeof(char) * MAX_FULLPATH_NAME);
+    c_output_file_name = (char*)malloc(sizeof(char) * MAX_FULLPATH_NAME);
+
     if (argc == 1) {
         printf("HPCA: Hellinger PCA for Word Embeddings, preprocessing stage\n");
         printf("Author: Remi Lebret (remi@lebret.ch)\n\n");
@@ -201,7 +201,7 @@ int main(int argc, char **argv) {
         printf("./preprocess -input-file data -output-file clean_data -lower 1 -digit 1 -verbose 1 -threads 8 -gzip 1\n\n");
         return 0;
     }
-    
+
     if ((i = find_arg((char *)"-verbose", argc, argv)) > 0) verbose = atoi(argv[i + 1]);
     if ((i = find_arg((char *)"-lower", argc, argv)) > 0) lower = atoi(argv[i + 1]);
     if ((i = find_arg((char *)"-digit", argc, argv)) > 0) digit = atoi(argv[i + 1]);
@@ -210,7 +210,7 @@ int main(int argc, char **argv) {
     if ((i = find_arg((char *)"-output-file", argc, argv)) > 0) strcpy(c_output_file_name, argv[i + 1]);
     else strcpy(c_output_file_name, (char *)"clean_data");
     if ((i = find_arg((char *)"-input-file", argc, argv)) > 0) strcpy(c_input_file_name, argv[i + 1]);
-    
+
     if (verbose){
         fprintf(stderr, "HPCA: Hellinger PCA for Word Embeddings\n");
         fprintf(stderr, "Author: Remi Lebret (remi@lebret.ch)\n");
@@ -220,7 +220,7 @@ int main(int argc, char **argv) {
     }
     /* check whether input file exists */
     is_file( c_input_file_name );
-    
+
     /* launch preproccessing */
     run();
 

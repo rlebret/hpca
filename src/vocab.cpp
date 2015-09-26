@@ -139,7 +139,7 @@ int merge(const int nthreads){
 
     char token[MAX_TOKEN];
     int freq;
-    char temp_hash_file[MAX_FILE_NAME];
+    char temp_hash_file[MAX_FULLPATH_NAME];
     // loop over pthread
     for (int t=0; t<nthreads; t++){
         sprintf(temp_hash_file, "%s-%d", c_vocab_file_name,t);
@@ -199,8 +199,8 @@ int run() {
 
 int main(int argc, char **argv) {
     int i;
-    c_input_file_name = (char*)malloc(sizeof(char) * MAX_FILE_NAME);
-    c_vocab_file_name = (char*)malloc(sizeof(char) * MAX_FILE_NAME);
+    c_input_file_name = (char*)malloc(sizeof(char) * MAX_FULLPATH_NAME);
+    c_vocab_file_name = (char*)malloc(sizeof(char) * MAX_FULLPATH_NAME);
 
     if (argc == 1) {
         printf("HPCA: Hellinger PCA for Word Embeddings, vocabulary extraction\n");
