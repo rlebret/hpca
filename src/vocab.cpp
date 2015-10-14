@@ -23,6 +23,7 @@
 #include <cstdlib>
 #include <cstring>
 #include <iostream>
+#include <libgen.h>
 
 // include utility headers
 #include "util/util.h"
@@ -35,7 +36,7 @@
 int verbose = true; // true or false
 int num_threads = 8; // pthreads
 char *c_input_file_name, *c_vocab_file_name;
-int max_vocab_size = 10000;
+int max_vocab_size = 1000000;
 
 /**
  * Write out vocabulary file
@@ -78,7 +79,7 @@ void *getvocab( void *p ){
     }
 
     // create vocab
-    Hashtable hash(max_vocab_size);
+    Hashtable hash(max_vocab_size,max_vocab_size*10);
     // open input file
     std::string input_file_name = std::string(c_input_file_name);
     File input_file(input_file_name);
@@ -135,7 +136,7 @@ int merge(const int nthreads){
     // get output file name
     std::string output_file_name = std::string(c_vocab_file_name);
     // create vocab
-    Hashtable hash(max_vocab_size);
+    Hashtable hash(max_vocab_size, max_vocab_size*10);
 
     char token[MAX_TOKEN];
     int freq;
@@ -214,6 +215,8 @@ int main(int argc, char **argv) {
         printf("\t\tOutput file to save the vocabulary\n");
         printf("\t-threads <int>\n");
         printf("\t\tNumber of threads; default 8\n");
+        printf("\t-max-size <int>\n");
+        printf("\t\tEstimation of the vocabulary size; default 100000\n");
         printf("\nExample usage:\n");
         printf("./vocab -input-file clean_data -vocab-file vocab.txt -nthread 8 -verbose 1\n\n");
         return 0;
@@ -231,13 +234,16 @@ int main(int argc, char **argv) {
     if ((i = find_arg((char *)"-threads", argc, argv)) > 0) num_threads = atoi(argv[i + 1]);
     if ((i = find_arg((char *)"-input-file", argc, argv)) > 0) strcpy(c_input_file_name, argv[i + 1]);
     if ((i = find_arg((char *)"-vocab-file", argc, argv)) > 0) strcpy(c_vocab_file_name, argv[i + 1]);
+    if ((i = find_arg((char *)"-max-size", argc, argv)) > 0) max_vocab_size = atoi(argv[i + 1]);
     else strcpy(c_vocab_file_name, (char *)"vocab.txt");
 
     /* check whether input file exists */
     is_file(c_input_file_name);
 
     /* check whether output directory for vocab file exists */
-    is_directory(c_vocab_file_name);
+    char* tmp = strdup(c_vocab_file_name);
+    char* dir = dirname(tmp);
+    is_directory(dir);
 
     run();
 

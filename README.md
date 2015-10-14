@@ -12,7 +12,7 @@ See the [EACL 2014 paper](http://lebret.ch/wp-content/uploads/2014/03/eacl2014.p
   * Doxygen (in order to make documentation which is optional)
 
 ## BUILDING
- 
+
  This project uses the Cross-platform Make (CMake) build system. However, we
  have conveniently provided a wrapper configure script and Makefile so that
  the typical build invocation of `./configure` followed by `make` will work.
@@ -24,14 +24,14 @@ See the [EACL 2014 paper](http://lebret.ch/wp-content/uploads/2014/03/eacl2014.p
 ## INSTALLING
 
  Once the project has been built (see "BUILDING"), execute `sudo make install`.
- 
+
  See [Install](INSTALL.md) for more details.
 
 ## GETTING WORD EMBEDDINGS
 
 This package includes 7 different tools: `preprocess`, `vocab`, `cooccurrence`, `pca`, `embeddings`, `eval` and `neighbors`.
 
-### Corpus preprocessing 
+### Corpus preprocessing
 
 Lowercase conversion and/or all numbers replaced with a special token ('0').
 
@@ -72,6 +72,7 @@ Extracting words with their respective frequency.
 * `-input-file <file>`: Input file from which to extract the vocabulary (gzip format is allowed)
 * `-vocab-file <file>`: Output file to save the vocabulary
 * `-threads <int>`: Number of threads; default 8
+* `-max-size <int>`: Estimation of the vocabulary size; default 1000000 (use with caution, high values will lead to a large memory consumption)
 * `-verbose <int>`: Set verbosity:  0=off or 1=on (default)
 
 **Example**:
@@ -81,7 +82,7 @@ vocab -input-file corpus-clean.txt -vocab-file vocab.txt -nthread 8 -verbose 1
 
 ### Getting co-occurrence probability matrix
 
-Constructing word-word cooccurrence statistics from the corpus. 
+Constructing word-word cooccurrence statistics from the corpus.
 The user should supply a vocabulary file, as produced by `vocab`.
 
 `cooccurrence` options:
@@ -191,9 +192,9 @@ eval -word-file words.txt -vocab-file target_vocab.txt -ws353 1 -rg65 1 -rw 1 -s
 
 ### Computing word embeddings nearest neighbors
 
-An exploratory tool to evaluate word embeddings quality. 
+An exploratory tool to evaluate word embeddings quality.
 The user should supply the file containing the word embeddings and its corresponding vocabulary.
-By default, this tool runs in interactive mode. Otherwise, a file containing a list of words can be provided. 
+By default, this tool runs in interactive mode. Otherwise, a file containing a list of words can be provided.
 
 `neighbors` options:
 * `-word-file <file>`: File containing word embeddings to evaluate
@@ -218,7 +219,7 @@ For a full demo example, run:
 This script will download a tokenized version of the [Reuters Corpus Volume I (RCV1)](http://www.jmlr.org/papers/volume5/lewis04a/lewis04a.pdf) and compute word embeddings out of it.
 
 
-## AUTHORS 
+## AUTHORS
 
  * Rémi Lebret: remi@lebret.ch
 
@@ -227,11 +228,9 @@ This script will download a tokenized version of the [Reuters Corpus Volume I (R
   * Eigen3 -- http://eigen.tuxfamily.org
 
   Eigen 3 is a lightweight C++ template library for vector and matrix math, a.k.a. linear algebra.
-  
+
 
   * redsvd -- https://code.google.com/p/redsvd/
 
   redsvd is a library for solving several matrix decompositions including singular value decomposition (SVD), principal component analysis (PCA), and eigen value decomposition.
   redsvd uses Eigen3.
-
-

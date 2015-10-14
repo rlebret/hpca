@@ -46,7 +46,6 @@ int cxt_size=5;
 int num_threads = 8; // pthreads
 float memory_limit = 4.0; // soft limit, in gigabytes, used to estimate optimal array sizes
 unsigned long long max_cooccur_size;
-int max_vocab_size = 10000;
 // variable for handling vocab
 Hashtable *hash;
 char ** tokename;
@@ -165,7 +164,7 @@ int get_vocab(){
     // memory allocation
     float appearance_freq;
     const float ratio = 1.0/ntoken;
-    hash = new Hashtable(vocab_size);
+    hash = new Hashtable(vocab_size, vocab_size*10);
     tokename = (char**) malloc(sizeof(char*)*vocab_size);
     tokenfound = (int*) malloc(sizeof(int)*vocab_size);
     for (int i=0; i<vocab_size; i++) tokenfound[i]=false;
@@ -178,6 +177,8 @@ int get_vocab(){
         appearance_freq=freq*ratio;
         if (appearance_freq>upper_bound) Cid_upper++;
         if (appearance_freq>=lower_bound) Cid_lower++;
+        // check whether other tokens need to be stored in hash table
+        if (freq<min_freq && appearance_freq<lower_bound) break;
         i++;
     }
 
@@ -227,6 +228,9 @@ unsigned long long getcontext(cooccur_t *data, unsigned long long itr, const int
     int rightcxt = (j-cxt_size)>0 ? j-cxt_size : 0;
     int leftcxt = (j+cxt_size+1)<len ? j+cxt_size+1 : len;
     const int target = tokens[j];
+    if (target==-1){ // should not happen
+        throw std::runtime_error("unknown token!!");
+    }
 
     // set dynamic context variables
     float weight, weight_itr;
@@ -312,7 +316,7 @@ void *cooccurrence( void *p ){
         }
         // store token with context
         for (int j=0; j<k; j++){
-            if (tokens[j]<Wid){
+            if (tokens[j]>=0 && tokens[j]<Wid){
                 data_itr = getcontext( data, data_itr, tokens, j, k);
                 if (data_itr>data_overflow){ // save date on disk
                     qsort(data, data_itr, sizeof(cooccur_t), compare);
