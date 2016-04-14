@@ -112,6 +112,7 @@ int merge_files(const int nbthread) {
             insert_pq(pq, new_id, size);
         }
     }
+    if (!tokenfound[old_id.idx1]) tokenfound[old_id.idx1]=true; // set this token has found
     fwrite(&old_id, sizeof(cooccur_t), 1, fout);
     fclose(fout);
     if (verbose){
