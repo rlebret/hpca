@@ -226,7 +226,7 @@ void runsimilarity( const Eigen::MatrixXf& words
 
 
     const long long int npairs=gold.size();
-    if (verbose) fprintf(stderr, "number of pairs = %d\n",npairs);
+    if (verbose) fprintf(stderr, "number of pairs = %lld\n",npairs);
     if (npairs>0){
         // get scores
         std::vector<float> scores(npairs);

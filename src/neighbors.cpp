@@ -218,7 +218,7 @@ int main(int argc, char **argv) {
         while(1){
             char w[MAX_TOKEN];
             fprintf(stderr, "\nEnter a word: ");
-            scanf("%s",&w);
+            scanf("%s",w);
 
             if ( (strcmp(w,"q") == 0) || (strcmp(w,"Q") == 0) ){ // exit
                 break;

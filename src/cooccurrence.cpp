@@ -277,7 +277,7 @@ void *cooccurrence( void *p ){
         sprintf(output_file_name, "%s-%ld", c_output_file_name, thread->id());
         if (verbose) fprintf(stderr, "create pthread n°%ld, reading from position %ld to %ld\n",thread->id(), start, end-1);
     }else{
-        sprintf(output_file_name, "%s-%ld", c_output_file_name, 0);
+        sprintf(output_file_name, "%s-%d", c_output_file_name, 0);
     }
 
     // create output file

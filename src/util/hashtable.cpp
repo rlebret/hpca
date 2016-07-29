@@ -24,7 +24,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <limits.h>
-#include <string.h>
+#include <string>
 
 /* Create a new hashtable. */
 Hashtable::Hashtable( const long int size
@@ -174,4 +174,3 @@ void Hashtable::print(const char *filename){
     fprintf(fout, "%s %d\n", table_[i].key, table_[i].value);
   fclose(fout);
 }
-
