@@ -24,7 +24,11 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <limits.h>
-#include <string>
+#ifdef __APPLE__
+  #include <string>
+#else
+  #include <string.h>
+#endif
 
 /* Create a new hashtable. */
 Hashtable::Hashtable( const long int size

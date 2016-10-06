@@ -234,8 +234,8 @@ int main(int argc, char **argv) {
     if ((i = find_arg((char *)"-threads", argc, argv)) > 0) num_threads = atoi(argv[i + 1]);
     if ((i = find_arg((char *)"-input-file", argc, argv)) > 0) strcpy(c_input_file_name, argv[i + 1]);
     if ((i = find_arg((char *)"-vocab-file", argc, argv)) > 0) strcpy(c_vocab_file_name, argv[i + 1]);
-    if ((i = find_arg((char *)"-max-size", argc, argv)) > 0) max_vocab_size = atoi(argv[i + 1]);
     else strcpy(c_vocab_file_name, (char *)"vocab.txt");
+    if ((i = find_arg((char *)"-max-size", argc, argv)) > 0) max_vocab_size = atoi(argv[i + 1]);
 
     /* check whether input file exists */
     is_file(c_input_file_name);

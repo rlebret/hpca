@@ -17,7 +17,7 @@ ADD_EXECUTABLE(pca pca.cpp)
 ADD_EXECUTABLE(embeddings embeddings.cpp)
 ADD_EXECUTABLE(eval eval.cpp)
 ADD_EXECUTABLE(neighbors neighbors.cpp)
-
+ADD_EXECUTABLE(stats stats.cpp)
 
 # Linking
 TARGET_LINK_LIBRARIES( preprocess
@@ -54,6 +54,10 @@ TARGET_LINK_LIBRARIES( neighbors
                        ${MATH_LIB}
                        ${ZLIB_LIBRARIES} 
                        )
+TARGET_LINK_LIBRARIES( stats
+                       util
+                       ${ZLIB_LIBRARIES} 
+                       )
 
 # Installing
 INSTALL(TARGETS preprocess DESTINATION bin)
@@ -63,6 +67,6 @@ INSTALL(TARGETS pca DESTINATION bin)
 INSTALL(TARGETS embeddings DESTINATION bin)
 INSTALL(TARGETS eval DESTINATION bin)
 INSTALL(TARGETS neighbors DESTINATION bin)
-
+INSTALL(TARGETS stats DESTINATION bin)
 
 

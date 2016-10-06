@@ -29,7 +29,7 @@ See the [EACL 2014 paper](http://lebret.ch/wp-content/uploads/2014/03/eacl2014.p
 
 ## GETTING WORD EMBEDDINGS
 
-This package includes 7 different tools: `preprocess`, `vocab`, `cooccurrence`, `pca`, `embeddings`, `eval` and `neighbors`.
+This package includes 8 different tools: `preprocess`, `vocab`, `stats`, `cooccurrence`, `pca`, `embeddings`, `eval` and `neighbors`.
 
 ### Corpus preprocessing
 
@@ -72,12 +72,24 @@ Extracting words with their respective frequency.
 * `-input-file <file>`: Input file from which to extract the vocabulary (gzip format is allowed)
 * `-vocab-file <file>`: Output file to save the vocabulary
 * `-threads <int>`: Number of threads; default 8
-* `-max-size <int>`: Estimation of the vocabulary size; default 1000000 (use with caution, high values will lead to a large memory consumption)
+* `-max-size <int>`: Estimation of the vocabulary size; default is 1000000 (use with caution, high values will lead to a large memory consumption). The recommended value for English Wikipedia (about 2B tokens) is 10000000.
 * `-verbose <int>`: Set verbosity:  0=off or 1=on (default)
 
 **Example**:
 ```
 vocab -input-file corpus-clean.txt -vocab-file vocab.txt -nthread 8 -verbose 1
+```
+
+### Corpus statistics
+
+Outputting descriptive statistics about the corpus, such as the number of word types and theirprobabily of occurrence. This tool is helpful to define the context vocabulary before constructing the co-occurrence matrix.
+
+`stats` options:
+* `-vocab-file <file>`: Vocabulary file
+
+**Example**:
+```
+stats -vocab-file vocab.txt
 ```
 
 ### Getting co-occurrence probability matrix
