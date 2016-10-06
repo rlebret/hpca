@@ -77,12 +77,12 @@ Extracting words with their respective frequency.
 
 **Example**:
 ```
-vocab -input-file corpus-clean.txt -vocab-file vocab.txt -nthread 8 -verbose 1
+vocab -input-file corpus-clean.txt -vocab-file vocab.txt -threads 8 -max-size 10000000 -verbose 1
 ```
 
 ### Corpus statistics
 
-Outputting descriptive statistics about the corpus, such as the number of word types and theirprobabily of occurrence. This tool is helpful to define the context vocabulary before constructing the co-occurrence matrix.
+Outputting descriptive statistics about the corpus, such as the number of word types and their probabily of occurrence. This tool is helpful to define the context vocabulary before constructing the co-occurrence matrix.
 
 `stats` options:
 * `-vocab-file <file>`: Vocabulary file
