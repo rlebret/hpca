@@ -34,7 +34,9 @@
 int verbose = true; // true or false
 int dyn_cxt = false; // true or false
 int min_freq = 100; // keep words appearing at least min_freq times
-char *c_input_file_name, *c_vocab_file_name, *c_output_dir_name, *c_output_file_name;
+char *c_input_file_name, *c_output_dir_name, *c_output_file_name;
+char *c_vocab_file_name, *c_context_file_name;
+int predefined_context=0;
 int vocab_size=0;
 long int ntoken=0;
 float upper_bound=1.0;
@@ -47,7 +49,8 @@ int num_threads = 8; // pthreads
 float memory_limit = 4.0; // soft limit, in gigabytes, used to estimate optimal array sizes
 unsigned long long max_cooccur_size;
 // variable for handling vocab
-Hashtable *hash;
+vocab hash;
+sparse_hash_map<unsigned int,unsigned int> context;
 char ** tokename;
 int * tokenfound;
 int * nfile;
@@ -139,11 +142,9 @@ int merge_files(const int nbthread) {
 
 /* load vocabulary */
 int get_vocab(){
-
     char token[MAX_TOKEN];
     int freq;
     int i=0;
-
     // open vocabulary file
     FILE *fp = fopen(c_vocab_file_name, "r");
     // get statistics on vocabulary
@@ -163,28 +164,44 @@ int get_vocab(){
     fseek(fp, 0, SEEK_SET);
 
     // memory allocation
-    float appearance_freq;
-    const float ratio = 1.0/ntoken;
-    hash = new Hashtable(vocab_size, vocab_size*10);
     tokename = (char**) malloc(sizeof(char*)*vocab_size);
     tokenfound = (int*) malloc(sizeof(int)*vocab_size);
     for (int i=0; i<vocab_size; i++) tokenfound[i]=false;
-
-    // insert statistics on vocabulary
+    // fill up vocabulary hashtable and tokennames
     while(fscanf(fp, "%s %d\n", token, &freq) != EOF){
-        hash->insert(token, i);
+        hash[token]=i;
         tokename[i] = (char*)malloc(strlen(token)+1);
         strcpy(tokename[i], token);
-        appearance_freq=freq*ratio;
-        if (appearance_freq>upper_bound) Cid_upper++;
-        if (appearance_freq>=lower_bound) Cid_lower++;
-        // check whether other tokens need to be stored in hash table
-        if (freq<min_freq && appearance_freq<lower_bound) break;
         i++;
     }
 
-    if (verbose) fprintf(stderr, "context vocabulary size [%.3e,%.3e] = %d\n",upper_bound, lower_bound, Cid_lower-Cid_upper);
-
+    if ( predefined_context ){
+        // open context vocabulary file
+        FILE *fc = fopen(c_context_file_name, "r");
+        // get the number of context words in the given vocabulary
+        i=0;
+        while(fscanf(fc, "%s\n", token) != EOF){
+            if ( hash.find(token) == hash.end() ){
+                throw std::runtime_error("unknow word from the context vocabulary: " + std::string(token));
+            }
+            context[hash[token]]=i++;
+        }
+        if (verbose) fprintf(stderr, "context vocabulary size                       = %d\n", context.size());
+    }else{
+        // get back at the beginning of the file
+        fseek(fp, 0, SEEK_SET);
+        float appearance_freq;
+        const float ratio = 1.0/ntoken;
+        // insert statistics on vocabulary
+        while(fscanf(fp, "%s %d\n", token, &freq) != EOF){
+            appearance_freq=freq*ratio;
+            if (appearance_freq>upper_bound) Cid_upper++;
+            if (appearance_freq>=lower_bound) Cid_lower++;
+            // check whether other tokens need to be stored in hash table
+            if (freq<min_freq && appearance_freq<lower_bound) break;
+        }
+        if (verbose) fprintf(stderr, "context vocabulary size [%.3e,%.3e] = %d\n",upper_bound, lower_bound, Cid_lower-Cid_upper);
+    }
     fclose(fp);
 
     return 0;
@@ -192,40 +209,54 @@ int get_vocab(){
 
 /* write out cooccurrence vocabularies */
 void write_vocab(){
-
-    char * c_output_word_name = (char*)malloc(sizeof(char)*(strlen(c_output_dir_name)+strlen("target_words.txt")+2));
-    sprintf(c_output_word_name, "%s/target_words.txt",c_output_dir_name);
-    char * c_output_context_name = (char*)malloc(sizeof(char)*(strlen(c_output_dir_name)+strlen("context_words.txt")+2));
-    sprintf(c_output_context_name, "%s/context_words.txt",c_output_dir_name);
-
+    char * c_output_word_name = get_full_path(c_output_dir_name, "target_words.txt");
     if (verbose){
         fprintf(stderr, "writing target words vocabulary in %s\n", c_output_word_name);
-        fprintf(stderr, "writing context words vocabulary in %s\n", c_output_context_name);
     }
     // opening files
     FILE *fw = fopen(c_output_word_name, "w");
-    FILE *fc = fopen(c_output_context_name, "w");
-
     for (int i=0; i<vocab_size; i++){
         if (tokenfound[i]){
             fprintf(fw, "%s\n", tokename[i]);
         }
-        if (i>=Cid_upper && i<=Cid_lower){
-            fprintf(fc, "%s\n", tokename[i]);
-        }
     }
     //closing files
     fclose(fw);
-    fclose(fc);
-
     // release memory
     free(c_output_word_name);
-    free(c_output_context_name);
+
+    if (!predefined_context){
+      char * c_output_context_name = get_full_path(c_output_dir_name, "context_words.txt");
+      if (verbose){
+        fprintf(stderr, "writing context words vocabulary in %s\n", c_output_context_name);
+      }
+      // opening files
+      FILE *fc = fopen(c_output_context_name, "w");
+      for (int i=0; i<vocab_size; i++){
+          if (i>=Cid_upper && i<=Cid_lower){
+              fprintf(fc, "%s\n", tokename[i]);
+          }
+      }
+      //closing files
+      fclose(fc);
+      // release memory
+      free(c_output_context_name);
+    }
 }
 
 /* add context */
+unsigned long long addcontext(cooccur_t *data, unsigned long long itr, const int target, const int context, const float weight){
+    data[itr].idx1=target;
+    data[itr].idx2=context; // keep indices starting from 0
+    (dyn_cxt) ? data[itr].val=weight : data[itr].val=1.0;
+    itr++;
+    return itr;
+}
+
+/* get context from a window of words */
 unsigned long long getcontext(cooccur_t *data, unsigned long long itr, const int* tokens, const int j, const int len){
 
+    sparse_hash_map<unsigned int,unsigned int>::iterator cxt_itr;
     int rightcxt = (j-cxt_size)>0 ? j-cxt_size : 0;
     int leftcxt = (j+cxt_size+1)<len ? j+cxt_size+1 : len;
     const int target = tokens[j];
@@ -242,12 +273,16 @@ unsigned long long getcontext(cooccur_t *data, unsigned long long itr, const int
     for (int k=rightcxt; k<leftcxt; k++){
         if (k!=j){
             const int t=tokens[k];
-            // check whether this context is in our context vocabulary
-            if (t>=Cid_upper && t<=Cid_lower){
-                data[itr].idx1=target;
-                data[itr].idx2=t-Cid_upper; // keep indices starting from 0
-                (dyn_cxt) ? data[itr].val=weight : data[itr].val=1.0;
-                itr++;
+            if (predefined_context){
+                cxt_itr = context.find(t); // check whether this context is in our predefined context vocabulary
+                if (cxt_itr != context.end()){
+                    itr = addcontext(data, itr, target, cxt_itr->second, weight);
+                }
+            }else{
+                // check whether this context is in our context vocabulary
+                if (t>=Cid_upper && t<=Cid_lower){
+                    itr = addcontext(data, itr, target, t-Cid_upper, weight); // keep indices starting from 0
+                }
             }
         }
         if (dyn_cxt)
@@ -262,7 +297,6 @@ unsigned long long getcontext(cooccur_t *data, unsigned long long itr, const int
  * the worker
  **/
 void *cooccurrence( void *p ){
-
     // get start & end for this thread
     Thread* thread = (Thread*)p;
     const long int start = thread->start();
@@ -309,7 +343,7 @@ void *cooccurrence( void *p ){
         k=0;
         // get next word
         while (input_file.getword(word)){
-            tokens[k++] = hash->get(word);
+            tokens[k++] = hash[word];
             if(k>=line_size) {
                 line_size *= 2;
                 tokens = (int*)realloc(tokens, sizeof(int) * line_size);
@@ -365,7 +399,6 @@ void *cooccurrence( void *p ){
  * Run with multithreading
  **/
 int run(){
-
     // get vocabulary from file
     get_vocab();
 
@@ -406,24 +439,21 @@ int run(){
     free(tokenfound);
     for (int i=0; i<vocab_size; i++) if (tokename[i]) free(tokename[i]);
     free(tokename);
-    delete hash;
 
     return 0;
 }
 
 void write_options(){
-
-    char *c_options_file_name = (char*)malloc(sizeof(char)*(strlen(c_output_dir_name)+strlen("options.txt")+1));
-    sprintf(c_options_file_name, "%s/options.txt",c_output_dir_name);
-
+    char *c_options_file_name = get_full_path(c_output_dir_name, "options.txt");
     FILE *fopt = fopen(c_options_file_name, "w");
-
+    
     fprintf(fopt, "#######################\n");
     fprintf(fopt, "# general options     #\n");
     fprintf(fopt, "#######################\n");
     fprintf(fopt, "EXP_DIR=%s\n",c_output_dir_name);
     fprintf(fopt, "CORPUS_FILE=%s\n",c_input_file_name);
     fprintf(fopt, "VOCAB_FILE=%s\n",c_vocab_file_name);
+    fprintf(fopt, "CXT_FILE=%s\n",c_context_file_name);
     fprintf(fopt, "VERBOSE=%d\n",verbose);
     fprintf(fopt, "NUM_THREADS=%d\n\n",num_threads);
 
@@ -446,6 +476,7 @@ int main(int argc, char **argv) {
     int i;
     c_input_file_name = (char*)malloc(sizeof(char) * MAX_FULLPATH_NAME);
     c_vocab_file_name = (char*)malloc(sizeof(char) * MAX_FULLPATH_NAME);
+    c_context_file_name = (char*)malloc(sizeof(char) * MAX_FULLPATH_NAME);
     c_output_dir_name = (char*)malloc(sizeof(char) * MAX_PATH_NAME);
 
     if (argc == 1) {
@@ -458,14 +489,16 @@ int main(int argc, char **argv) {
         printf("\t\tInput file containing the tokenized and cleaned corpus text.\n");
         printf("\t-vocab-file <file>\n");
         printf("\t\tVocabulary file\n");
+        printf("\t-cxt-file <file>\n");
+        printf("\t\tContext vocabulary file\n");
         printf("\t-output-dir <dir>\n");
         printf("\t\tOutput directory name to save files\n");
         printf("\t-min-freq <int>\n");
         printf("\tDiscarding all words with a lower appearance frequency (default is 100)\n");
         printf("\t-upper-bound <float>\n");
-        printf("\tDiscarding words from the context vocabulary with a upper appearance frequency (default is 1.0)\n");
+        printf("\tDiscarding words from the context vocabulary with a upper appearance frequency (default is 1.0). Only used when cxt-file is empty\n");
         printf("\t-lower-bound <float>\n");
-        printf("\tDiscarding words from the context vocabulary with a lower appearance frequency (default is 0.00001)\n");
+        printf("\tDiscarding words from the context vocabulary with a lower appearance frequency (default is 0.00001).Only used when cxt-file is empty\n");
         printf("\t-cxt-size <int>\n");
         printf("\tSymmetric context size around words (default is 5)\n");
         printf("\t-dyn-cxt <int>\n");
@@ -498,28 +531,32 @@ int main(int argc, char **argv) {
     if ((i = find_arg((char *)"-output-dir", argc, argv)) > 0) strcpy(c_output_dir_name, argv[i + 1]);
     else strcpy(c_output_dir_name, (char *)".");
     if ((i = find_arg((char *)"-vocab-file", argc, argv)) > 0) strcpy(c_vocab_file_name, argv[i + 1]);
-    else strcpy(c_vocab_file_name, (char *)"vocab");
+    else strcpy(c_vocab_file_name, (char *)"vocab.txt");
+    if ((i = find_arg((char *)"-cxt-file", argc, argv)) > 0) strcpy(c_context_file_name, argv[i + 1]);
+    else strcpy(c_context_file_name, (char *)"none");
     if ((i = find_arg((char *)"-input-file", argc, argv)) > 0) strcpy(c_input_file_name, argv[i + 1]);
 
     /* check whether output directory exists */
     is_directory(c_output_dir_name);
-    c_output_file_name = (char*)malloc(sizeof(char)*(strlen(c_output_dir_name)+strlen("cooccurrence")+2));
-    sprintf(c_output_file_name, "%s/cooccurrence",c_output_dir_name);
+    c_output_file_name = get_full_path(c_output_dir_name, "cooccurrence");
 
     /* check whether input file exists */
     is_file(c_input_file_name);
     /* check whether vocab file exists */
     is_file(c_vocab_file_name);
-
-    /* check parameters */
-    if ( (upper_bound<0) || (upper_bound>1) ){
-        throw std::runtime_error("-upper-bound must be a value between 0 and 1 !!");
-    }
-    if ( (lower_bound<0) || (lower_bound>1) ){
-        throw std::runtime_error("-lower-bound must be a value between 0 and 1 !!");
-    }
-    if ( upper_bound<=lower_bound ){
-        throw std::runtime_error("-lower-bound value must be lower than -upper-bound value !!");
+    if (strcmp(c_context_file_name, "none") != 0){ /* use a predefined context vocabulary */
+      is_file(c_context_file_name); // check whether files exists
+      predefined_context=1;
+    }else{ /* check bound parameters */
+      if ( (upper_bound<0) || (upper_bound>1) ){
+          throw std::runtime_error("-upper-bound must be a value between 0 and 1 !!");
+      }
+      if ( (lower_bound<0) || (lower_bound>1) ){
+          throw std::runtime_error("-lower-bound must be a value between 0 and 1 !!");
+      }
+      if ( upper_bound<=lower_bound ){
+          throw std::runtime_error("-lower-bound value must be lower than -upper-bound value !!");
+      }
     }
     if ( memory_limit<=0 ){
         throw std::runtime_error("-memory must be a positive integer (number of GB) !!");
@@ -539,6 +576,7 @@ int main(int argc, char **argv) {
     /* release memory */
     free(c_input_file_name);
     free(c_vocab_file_name);
+    free(c_context_file_name);
     free(c_output_dir_name);
     free(c_output_file_name);
 

@@ -29,7 +29,7 @@ See the [EACL 2014 paper](http://lebret.ch/wp-content/uploads/2014/03/eacl2014.p
 
 ## GETTING WORD EMBEDDINGS
 
-This package includes 8 different tools: `preprocess`, `vocab`, `stats`, `cooccurrence`, `pca`, `embeddings`, `eval` and `neighbors`.
+This package includes 9 different tools: `preprocess`, `vocab`, `stats`, `cooccurrence`, `pca`, `embeddings`, `inference`, `eval` and `neighbors`.
 
 ### Corpus preprocessing
 
@@ -38,14 +38,7 @@ Lowercase conversion and/or all numbers replaced with a special token ('0').
 
 The corpus needs to be a **tokenized** plain text file containing only the **sentences** of the corpus.
 
-Before running the `preprocess` tool, authors strongly recommend to follow these two steps:
-
-1) Running a sentence detector, e.g. [the Apache OpenNLP Sentence Dectector](https://opennlp.apache.org/documentation/1.5.3/manual/opennlp.html#tools.sentdetect).
-```
-./apache-opennlp-1.5.3/bin/opennlp SentenceDetector ./apache-opennlp-1.5.3/bin/en-sent.bin < corpus.txt > corpus-sentences.txt
-```
-
-2) Running a tokenizer, e.g. [the Stanford Tokenizer](http://nlp.stanford.edu/software/tokenizer.shtml).
+Before running the `preprocess` tool, authors strongly recommend to run a tokenizer, e.g. [the Stanford Tokenizer](http://nlp.stanford.edu/software/tokenizer.shtml).
 ```
 java -cp stanford-parser.jar edu.stanford.nlp.process.PTBTokenizer -preserveLines corpus-sentences.txt > corpus-token.txt
 ```
@@ -72,12 +65,11 @@ Extracting words with their respective frequency.
 * `-input-file <file>`: Input file from which to extract the vocabulary (gzip format is allowed)
 * `-vocab-file <file>`: Output file to save the vocabulary
 * `-threads <int>`: Number of threads; default 8
-* `-max-size <int>`: Estimation of the vocabulary size; default is 1000000 (use with caution, high values will lead to a large memory consumption). The recommended value for English Wikipedia (about 2B tokens) is 10000000.
 * `-verbose <int>`: Set verbosity:  0=off or 1=on (default)
 
 **Example**:
 ```
-vocab -input-file corpus-clean.txt -vocab-file vocab.txt -threads 8 -max-size 10000000 -verbose 1
+vocab -input-file corpus-clean.txt -vocab-file vocab.txt -threads 8 -verbose 1
 ```
 
 ### Corpus statistics
@@ -96,10 +88,12 @@ stats -vocab-file vocab.txt
 
 Constructing word-word cooccurrence statistics from the corpus.
 The user should supply a vocabulary file, as produced by `vocab`.
+The context vocabulary can be defined either using bounds on word appearance frequencies or using a predefined context vocabulary.
 
 `cooccurrence` options:
 * `-input-file <file>`: Input file containing the tokenized and cleaned corpus text (gzip format is allowed)
 * `-vocab-file <file>`: Vocabulary file
+* `-cxt-file <file>`: Predefined context vocabulary file
 * `-output-dir <dir>`: Output directory name to save files
 * `-min-freq <int>`: Discarding all words with a lower appearance frequency (default is 100)
 * `-upper-bound <float>`: Discarding words from the context vocabulary with a upper appearance frequency (default is 1.0)
@@ -158,7 +152,7 @@ The user should supply the directory where files produced by `pca` are.
 
 `embeddings` options:
 * `-input-dir <dir>`: Directory where to find files from the randomized SVD
-* `-output-name <string>`: Filename for embeddings file which will be placed in <dir> (default is words.txt)
+* `-output-name <string>`: Filename for embeddings file which will be placed in <input-dir> (default is words.txt)
 * `-dim <int>`: Word vector dimension; default 100
 * `-eig <float>`: Eigenvalue weighting (0.0, 0.5 or 1.0); default is 0.0
 * `-norm <int>`: Are vectors normalized to unit length? 0=off (default) or 1=on
@@ -168,6 +162,26 @@ The user should supply the directory where files produced by `pca` are.
 **Example**:
 ```
 embeddings -input-dir path_to_svd_files -output-name words.txt -eig 0.0 -dim 100 -norm 0
+```
+
+### Inferring new word embeddings
+
+Inferring new word embeddings from an existing Hellinger PCA.
+The user should supply the directories where to find cooccurrence statistics of the new words and files produced by `pca`.
+
+`inference` options:
+* `-cooc-dir <dir>`: Directory where to find the `cooccurrence.bin` file of the new words
+* `-pca-dir <dir>`: Directory where to find files from the randomized SVD
+* `-output-name <string>`: Filename for embeddings file which will be placed in <cooc-dir> (default is inference_words.txt)
+* `-dim <int>`: Word vector dimension; default 100
+* `-eig <float>`: Eigenvalue weighting (0.0, 0.5 or 1.0); default is 0.0
+* `-norm <int>`: Are vectors normalized to unit length? 0=off (default) or 1=on
+* `-threads <int>`: Number of threads; default 8
+* `-verbose <int>`: Set verbosity: 0=off or 1=on (default)
+
+**Example**:
+```
+inference -cooc-dir path_to_cooccurrence_files -pca-dir path_to_svd_files -output-name inference_words.txt -eig 0.0 -dim 100 -norm 0
 ```
 
 ### Evaluating word embeddings

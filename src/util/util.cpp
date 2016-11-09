@@ -72,6 +72,13 @@ bool is_file(const char * path){
     }else return true;
 }
 
+/* get file full path */
+char* const get_full_path(const char *dir, const char *filename){
+  char *output_filename = (char*)malloc(strlen(dir)+strlen(filename)+2);
+  sprintf(output_filename, "%s/%s", dir, filename);
+  return output_filename;
+}
+
 // get total memory
 const unsigned long long int get_total_memory()
 {
@@ -82,7 +89,7 @@ const unsigned long long int get_total_memory()
     status.dwLength = sizeof(status);
     GlobalMemoryStatus( &status );
     return (size_t)status.dwTotalPhys;
-    
+
 #elif defined(_WIN32)
     /* Windows. ------------------------------------------------- */
     /* Use new 64-bit MEMORYSTATUSEX, not old 32-bit MEMORYSTATUS */
@@ -95,16 +102,16 @@ const unsigned long long int get_total_memory()
     struct statfs stats;
     if (statfs("/", &stats))
     {  perror("sysinfo()"); exit(1); }
-    
+
     return (uint64_t)stats.f_bsize * stats.f_bfree;
-    
+
 #elif __linux
     struct sysinfo the_info;
     if(sysinfo(&the_info))
     {  perror("sysinfo()"); exit(1); }
-    
+
     return the_info.totalram;
-    
+
 #else
     // 2GB -1
     return 2147483647;
@@ -136,7 +143,7 @@ unsigned long long int get_available_memory()
     status.dwLength = sizeof(status);
     GlobalMemoryStatus( &status );
     return (size_t)status.dwAvailPhys;
-    
+
 #elif defined(_WIN32)
     /* Windows. ------------------------------------------------- */
     /* Use new 64-bit MEMORYSTATUSEX, not old 32-bit MEMORYSTATUS */
@@ -144,34 +151,34 @@ unsigned long long int get_available_memory()
     status.dwLength = sizeof(status);
     GlobalMemoryStatusEx( &status );
     return (size_t)status.ullAvailPhys;
-    
+
 #elif __APPLE__
     vm_size_t page_size;
     mach_port_t mach_port;
     mach_msg_type_number_t count;
     vm_statistics_data_t vm_stats;
-    
+
     mach_port = mach_host_self();
     count = sizeof(vm_stats) / sizeof(natural_t);
     if (KERN_SUCCESS == host_page_size(mach_port, &page_size) &&
-        KERN_SUCCESS == host_statistics(mach_port, HOST_VM_INFO, 
+        KERN_SUCCESS == host_statistics(mach_port, HOST_VM_INFO,
                                         (host_info_t)&vm_stats, &count))
     {
         return (int64_t)vm_stats.free_count + (int64_t)vm_stats.inactive_count * (int64_t)page_size;
     }
     else { throw std::runtime_error("Can't get available memory\n");  }
-    
+
 #elif __linux
     std::string  data_line;
     size_t found;
     long int availmem=0;
-    
+
     // 'file' stat seems to give the most reliable results
     //
     std::ifstream mem_stream("/proc/meminfo",std::ios_base::in);
-    
+
     if(mem_stream.fail())throw std::runtime_error("cannot open file /proc/meminfo \n");
-    
+
     // Parameter page research
     while (getline(mem_stream, data_line))
     {
@@ -180,7 +187,7 @@ unsigned long long int get_available_memory()
         {
             std::istringstream tokenizer(data_line);
             std::string token;
-            
+
             getline(tokenizer, token, ':');
             getline(tokenizer, token, 'k');
             std::istringstream float_iss(token);
@@ -192,7 +199,7 @@ unsigned long long int get_available_memory()
     }
     // check whether the keyword is found
     if (mem_stream.eof()) throw std::runtime_error("MemFree not found in file /proc/meminfo \n");
-    
+
     // Parameter page research
     while (getline(mem_stream, data_line))
     {
@@ -201,7 +208,7 @@ unsigned long long int get_available_memory()
         {
             std::istringstream tokenizer(data_line);
             std::string token;
-            
+
             getline(tokenizer, token, ':');
             getline(tokenizer, token, 'k');
             std::istringstream float_iss(token);
@@ -213,12 +220,12 @@ unsigned long long int get_available_memory()
     }
     // check whether the keyword is found
     if (mem_stream.eof()) throw std::runtime_error("Cached not found in file /proc/meminfo \n");
-    
+
     // file closing
     mem_stream.close();
-    
+
     return availmem*1024;
-    
+
 #else
     // 2GB - 1
     return 2147483647;
@@ -338,7 +345,7 @@ int get_next_word(char *word, FILE *stream) {
 int get_next_gzword(char *word, gzFile stream) {
   int a = 0, ch;
   while ((ch = gzgetc(stream)) != -1) {
-    
+
     if (ch == 13) continue;
     if ((ch == ' ') || (ch == '\t') || (ch == '\n')) {
       if (a > 0) {
@@ -371,7 +378,7 @@ int check_digit(char a)
     int ascii = (int)a;
     if ((ascii>=48)  && (ascii<58))
         return 1;
-    
+
     return 0;
 }
 
@@ -379,22 +386,22 @@ int check_digit(char a)
 /* replace all digits with the special character '0' */
 int replace_digit(char* string) {
     char  *temp, *pointer, ch, *start;
-    
+
     temp = string;
     pointer = (char*)malloc(strlen(string)+1);
-    
+
     if( pointer == NULL )
     {
         printf("Unable to allocate memory.\n");
         exit(EXIT_FAILURE);
     }
-    
+
     start = pointer;
-    
+
     while(*temp)
     {
         ch = *temp;
-        
+
         if (check_digit(ch))
         {
             *pointer = '0';
@@ -405,7 +412,7 @@ int replace_digit(char* string) {
                 temp++;
                 ch = *temp;
             }
-            
+
         }else{
             *pointer = ch;
             pointer++;
@@ -413,11 +420,11 @@ int replace_digit(char* string) {
         }
     }
     *pointer = '\0';
-    
+
     pointer = start;
     strcpy(string, pointer); /* If you wish to convert original string */
     free(pointer);
-    
+
     return 0;
 }
 
@@ -472,16 +479,14 @@ void loadbar(long int const thread_id, unsigned int const x, unsigned int n, uns
 {
     const float ratio = x/(float)n;
     const int c = ratio * w;
-    
+
     if (thread_id==-1)
       fprintf(stderr, "%3d%% [", (int)(ratio*100));
     else
       fprintf(stderr, "pthread n°%02ld -- %3d%% [", thread_id, (int)(ratio*100));
-    
+
     for (int i=0; i<c; i++) fprintf(stderr,"=");
     for (int i=c; i<w; i++) fprintf(stderr," ");
-    fprintf(stderr,"]\r"); 
+    fprintf(stderr,"]\r");
     fflush(stderr);
 }
-
-

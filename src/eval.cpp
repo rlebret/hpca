@@ -54,31 +54,26 @@
 // include redsvd headers
 #include "redsvd/util.h"
 
+// include i/o headers
+#include "io/eigen.h"
+#include "io/vocab.h"
+
 // define global variables
 int verbose=true;
 int lower=true;
 int num_threads=8;
 char *c_word_file_name, *c_vocab_file_name;
 // variable for handling vocab
-Hashtable * hash;
+vocab hash;
 int vocab_size;
 
-template<typename T>
-class CompareIndicesByAnotherVectorValues{
-    std::vector<T>* _values;
-    public:
-        CompareIndicesByAnotherVectorValues(std::vector<T>* values) : _values(values) {}
-    public:
-        bool operator() (const int& a, const int& b) const { return (*_values)[a] > (*_values)[b]; }
-};
-
-
-std::vector<float> rank(std::vector<float>& values, std::vector<int>& indices){
+/* ranking by values */
+std::vector<float> rank(Eigen::VectorXf& values, std::vector<int>& indices){
     std::vector<float> r(values.size());
     int i=0;
     while (1){
         int n=0,s=0;
-        while ( (i<(r.size()-1)) && (values[indices[i]]==values[indices[i+1]]) ){
+        while ( (i<(r.size()-1)) && (values(indices[i])==values(indices[i+1])) ){
             s += i;
             i++; n++;
         }
@@ -93,54 +88,6 @@ std::vector<float> rank(std::vector<float>& values, std::vector<int>& indices){
     return r;
 }
 
-std::vector<int> ordered(std::vector<float>* values) {
-    std::vector<int> indices(values->size());
-    for (int i = 0; i != indices.size(); ++i) indices[i] = i;
-    CompareIndicesByAnotherVectorValues<float> comp(values);
-    std::sort(indices.begin(), indices.end(), comp);
-    return indices;
-}
-
-// Read matrix from file
-void readMatrix(const char *filename, Eigen::MatrixXf& result)
-{
-    File matfile((std::string(filename)));
-    // get number of rows from file
-    const int rows = matfile.number_of_line();
-    /* check whether number of lines in words is equal to the number of words into vocab file */
-    if (rows != vocab_size){
-        throw std::runtime_error("Size mismatch between words and vocabulary files!!!\n");
-    }
-    // get number of rows from file
-    const int cols = matfile.number_of_column(' ');
-    if (verbose) fprintf(stderr, "words vector size = %d\n",cols);
-
-    // opening file
-    matfile.open();
-
-    // Populate matrix with numbers.
-    result.resize(rows,cols);
-    char *line=NULL;
-    char delim=' ';
-    for (int i = 0; i < rows; i++){
-        line = matfile.getline();
-        char *ptr = line;
-        char *olds = line;
-        char olddelim = delim;
-        int j=0;
-        while(olddelim && *line) {
-            while(*line && (delim != *line)) line++;
-            *line ^= olddelim = *line; // olddelim = *line; *line = 0;
-            result(i,j++) = atof(olds);
-            *line++ ^= olddelim; // *line = olddelim; line++;
-            olds = line;
-        }
-        free(ptr);
-    }
-    // closing file
-    matfile.close();
-};
-
 /* get cosine similarity between two vectors */
 float cossim(const Eigen::VectorXf& a, const Eigen::VectorXf& b){
     const float ab = a.dot(b);
@@ -150,52 +97,32 @@ float cossim(const Eigen::VectorXf& a, const Eigen::VectorXf& b){
     return ab * ratio;
 }
 
-/* load vocabulary */
-void getvocab(){
-
-    File fp((std::string(c_vocab_file_name)));
-    vocab_size = fp.number_of_line();
-    // create vocab
-    hash = new Hashtable(vocab_size);
-    // open file
-    fp.open();
-    // get vocabulary
-    char * line = NULL;
-    int i=0;
-    while( (line=fp.getline()) != NULL) {
-        hash->insert(line, i++);
-        free(line);
-    }
-    // closing file
-    fp.close();
-    if (verbose) fprintf(stderr, "number of words in vocabulary = %d\n",vocab_size);
-}
-
 /* return the mean of a vector */
-float const getmean(const std::vector<float>& vec){
+float const getmean(const Eigen::VectorXf& vec){
     const int nrow = vec.size();
     float s=0;
     for (int i=0; i<nrow; i++)
-        s += vec[i];
+        s += vec(i);
     return s/nrow;
 }
 
 /* return the standard deviation of a vector */
-float const getstd(const std::vector<float>& vec, const float mean){
+float const getstd(const Eigen::VectorXf& vec, const float mean){
     const int nrow = vec.size();
     float s=0;
     for (int i=0; i<nrow; i++)
-        s += powf((vec[i]-mean), 2.0);
+        s += powf((vec(i)-mean), 2.0);
 
     const float variance = s/(nrow-1);
     return sqrtf(variance);
 }
 
 /* worker for similarity dataset */
-void runsimilarity( const Eigen::MatrixXf& words
-                  , char * data
-                  , unsigned int length){
-
+void runsimilarity(
+      const Eigen::MatrixXf& words
+    , char * data
+    , unsigned int length
+){
     // get data
     char * ptr_data = data;
     char * buffer = (char*)malloc(MAX_TOKEN);
@@ -204,9 +131,10 @@ void runsimilarity( const Eigen::MatrixXf& words
     float coeff;
 
     int itr=0;
-    int i,j;
+    int n=0;
+    vocab::iterator i,j;
     std::vector<int> idx1, idx2;
-    std::vector<float> gold;
+    std::vector<float> tmp;
     while ((buffer = string_copy(buffer, ptr_data, &itr, '\n')) != '\0') {
         sscanf(buffer, "%s\t%s\t%f", token1, token2, &coeff);
         // lowercase?
@@ -214,28 +142,28 @@ void runsimilarity( const Eigen::MatrixXf& words
             lowercase(token1);
             lowercase(token2);
         }
-        if ( ((i = hash->value(token1))!=-1) && ((j = hash->value(token2))!=-1) ){
-            idx1.push_back(i);
-            idx2.push_back(j);
-            gold.push_back(coeff);
+        if ( ((i = hash.find(token1))!=hash.end()) && ((j = hash.find(token2))!=hash.end()) ){
+            idx1.push_back(i->second);
+            idx2.push_back(j->second);
+            tmp.push_back(coeff);
         }
         ptr_data=&data[++itr];
         if (itr==length) break;
     }
     free(buffer);
 
-
+    Eigen::VectorXf gold = Eigen::VectorXf::Map(tmp.data(), tmp.size());
     const long long int npairs=gold.size();
     if (verbose) fprintf(stderr, "number of pairs = %lld\n",npairs);
     if (npairs>0){
         // get scores
-        std::vector<float> scores(npairs);
+        Eigen::VectorXf scores(npairs);
         for (int i=0; i<npairs; i++){
             const float ab = words.row(idx1[i]).dot(words.row(idx2[i]));
             const float a2 = words.row(idx1[i]).dot(words.row(idx1[i]));
             const float b2 = words.row(idx2[i]).dot(words.row(idx2[i]));
             const float ratio = 1./sqrtf(a2*b2);
-            scores[i] = ab * ratio;
+            scores(i) = ab * ratio;
         }
 
         // Pearson's correlation
@@ -257,8 +185,8 @@ void runsimilarity( const Eigen::MatrixXf& words
         r/=((npairs-1)*cossim_std*gold_std);
 
         //  Spearman's correlation
-        std::vector<int> cossimsortidx = ordered(&scores);
-        std::vector<int> goldsortidx = ordered(&gold);
+        std::vector<int> cossimsortidx = REDSVD::Util::descending_order(scores);
+        std::vector<int> goldsortidx = REDSVD::Util::descending_order(gold);
 
         // get ranks
         std::vector<float> cossimrank = rank(scores, cossimsortidx);
@@ -284,10 +212,11 @@ void runsimilarity( const Eigen::MatrixXf& words
 
 
 /* worker for analogies dataset */
-float const runanalogy( const Eigen::MatrixXf& words
-                       , char * data
-                       , unsigned int length){
-
+float const runanalogy(
+      const Eigen::MatrixXf& words
+    , char * data
+    , unsigned int length
+){
     // get data
     char * ptr_data = data;
     char * buffer = (char*)malloc(MAX_TOKEN);
@@ -295,7 +224,7 @@ float const runanalogy( const Eigen::MatrixXf& words
     char token2[MAX_TOKEN];
     char token3[MAX_TOKEN];
     char token4[MAX_TOKEN];
-    int i,j,k,l;
+    vocab::iterator i,j,k,l;
     int itr=0;
 
     std::vector<int> a,b,c,d,idx;
@@ -308,19 +237,19 @@ float const runanalogy( const Eigen::MatrixXf& words
             lowercase(token3);
             lowercase(token4);
         }
-        if (   ((i = hash->value(token1))!=-1)
-            && ((j = hash->value(token2))!=-1)
-            && ((k = hash->value(token3))!=-1)
-            && ((l = hash->value(token4))!=-1)
+        if (   ((i = hash.find(token1))!=hash.end())
+            && ((j = hash.find(token2))!=hash.end())
+            && ((k = hash.find(token3))!=hash.end())
+            && ((l = hash.find(token4))!=hash.end())
             ){
-            a.push_back(i);
-            b.push_back(j);
-            c.push_back(k);
-            d.push_back(l);
-            idx.push_back(i);
-            idx.push_back(j);
-            idx.push_back(k);
-            idx.push_back(l);
+            a.push_back(i->second);
+            b.push_back(j->second);
+            c.push_back(k->second);
+            d.push_back(l->second);
+            idx.push_back(i->second);
+            idx.push_back(j->second);
+            idx.push_back(k->second);
+            idx.push_back(l->second);
         }
         ptr_data=&data[++itr];
         if (itr==length) break;
@@ -383,8 +312,6 @@ float const runanalogy( const Eigen::MatrixXf& words
         return 0;
     }
 }
-
-
 
 int main(int argc, char **argv) {
     int i;
@@ -457,11 +384,17 @@ int main(int argc, char **argv) {
     is_file(c_vocab_file_name);
 
     /* get vocabulary */
-    getvocab();
+    vocab_size = get_vocab(c_vocab_file_name, hash);
+    if (verbose) fprintf(stderr, "number of words in vocabulary = %d\n",vocab_size);
 
     /* get words */
     Eigen::MatrixXf words;
-    readMatrix(c_word_file_name, words);
+    read_eigen_matrix(c_word_file_name, words);
+    /* check whether number of lines in words is equal to the number of words into vocab file */
+    if (words.rows() != vocab_size){
+        throw std::runtime_error("Size mismatch between words and vocabulary files!!!\n");
+    }
+    if (verbose) fprintf(stderr, "words vector size = %d\n",words.cols());
 
     if (ws){
         fprintf(stdout, "\n---------------------------------------\n");
@@ -576,7 +509,6 @@ int main(int argc, char **argv) {
     /* release memory */
     free(c_vocab_file_name);
     free(c_word_file_name);
-    delete hash;
 
     if (verbose){
         fprintf(stderr, "\ndone\n");

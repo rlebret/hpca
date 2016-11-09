@@ -74,8 +74,8 @@ int get_stats(const char* filename){
     fclose(fp);
     fprintf(stderr, "---------------------------------------\n");
     for (i=0; i<11; i++)
-	fprintf(stderr, "number of word types with occurrences >=%5d                   = %d\n",cnt[i], res[i]);
-    
+        fprintf(stderr, "number of word types with occurrences >=%5d                   = %d\n",cnt[i], res[i]);
+
     return 0;
 }
 

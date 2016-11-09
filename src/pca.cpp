@@ -31,6 +31,9 @@
 #include "redsvd/redsvd.h"
 #include "redsvd/redsvdFile.h"
 
+// include i/o headers
+#include "io/cooccur.h"
+
 // define global variables
 int verbose = true; // true or false
 int num_threads=8;
@@ -38,74 +41,15 @@ int rank = 300;
 char *c_input_dir_name, *c_input_file_name;
 
 int run() {
-    int nrow = 0;
-    unsigned long long nonZeroNum = 0;
-    double start = REDSVD::Util::getSec();
-    // read and store cooccurrence data
-    cooccur_t data;
-    // vector to store rowsum
-    std::vector<float> rowsum;
-    float s=0;
-    // open file
-    FILE *fin = fopen(c_input_file_name,"rb");
-    if(fin == NULL) {fprintf(stderr, "Unable to open file %s.\n",c_input_file_name); return 1;}
-    if (verbose) fprintf(stderr, "Reading cooccurrence file %s.\n",c_input_file_name);
-    // read to get information on data
-    fread(&data, sizeof(cooccur_t), 1, fin);
-    ++nrow; ++nonZeroNum;
-    unsigned int current_idx = data.idx1;
-    unsigned int maxid = data.idx2;
-    s+=data.val;
-    while(true){
-        fread(&data, sizeof(cooccur_t), 1, fin);
-        if(feof(fin)) break;
-        ++nonZeroNum;
-        if (data.idx2>maxid) maxid=data.idx2;
-        if (data.idx1!=current_idx){
-            ++nrow;
-            current_idx=data.idx1;
-            rowsum.push_back(s);
-            s=0; // set sum to 0
-        }
-        s+=data.val;
-    }
-    if (verbose) fprintf(stderr, "# of words:%d, # of context words:%d, # of non-zero entries:%lld\n", nrow, maxid+1, nonZeroNum);
-    if (rank>maxid){
-        throw std::runtime_error("-rank must be lower than the number of context words!!");
-    }
-    // get back at the beginning of the file
-    fseek(fin, 0, SEEK_SET);
-
-    if (verbose) fprintf(stderr, "Storing cooccurrence matrix in memory...");
-
     // store cooccurrence in Eigen sparse matrix object
     REDSVD::SMatrixXf A;
-    A.resize(nrow, maxid+1);
-    A.reserve(nonZeroNum);
-    nrow=0;
-    // read to get information on data
-    fread(&data, sizeof(cooccur_t), 1, fin);
-    current_idx=data.idx1;
-    A.startVec(nrow);
-    A.insertBack(nrow, data.idx2) = sqrtf(data.val/(rowsum[nrow]+EPSILON)); // prevent division by 0 (should not happen anyway)
-    while(true){
-        fread(&data, sizeof(cooccur_t), 1, fin);
-        if(feof(fin)) break;
-        if (data.idx1!=current_idx){
-            A.startVec(++nrow);
-            current_idx=data.idx1;
-        }
-        A.insertBack(nrow, data.idx2) = sqrtf(data.val/(rowsum[nrow]+EPSILON));
+    const int ncontext = read_cooccurrence(c_input_file_name, A, verbose);
+    if (rank>ncontext){
+        throw std::runtime_error("-rank must be lower than the number of context words!!");
     }
-    A.finalize();
-
-    // closing file
-    fclose(fin);
-
-    if (verbose) fprintf(stderr, "done in %.2f.\n",REDSVD::Util::getSec() - start);
 
     if (verbose) fprintf(stderr, "Running randomized SVD...");
-    start = REDSVD::Util::getSec();
+    const double start = REDSVD::Util::getSec();
     REDSVD::RedSVD svdOfA(A, rank);
     if (verbose) fprintf(stderr, "done in %.2f.\n",REDSVD::Util::getSec() - start);
 
@@ -154,8 +98,7 @@ int main(int argc, char **argv) {
 
     /* check whether input directory exists */
     is_directory(c_input_dir_name);
-    c_input_file_name = (char*)malloc(sizeof(char)*(strlen(c_input_dir_name)+strlen("cooccurrence.bin")+2));
-    sprintf(c_input_file_name, "%s/cooccurrence.bin",c_input_dir_name);
+    c_input_file_name = get_full_path(c_input_dir_name, "cooccurrence.bin");
 
     /* check whether cooccurrence.bin exists */
     is_file( c_input_file_name );

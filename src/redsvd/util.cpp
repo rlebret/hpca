@@ -1,10 +1,10 @@
-/* 
+/*
  *  Copyright (c) 2010 Daisuke Okanohara
- * 
+ *
  *   Redistribution and use in source and binary forms, with or without
  *   modification, are permitted provided that the following conditions
  *   are met:
- * 
+ *
  *   1. Redistributions of source code must retain the above Copyright
  *      notice, this list of conditions and the following disclaimer.
  *
@@ -58,8 +58,7 @@ void Util::sampleGaussianMat(MatrixXf& mat){
       mat(i, j)  = f1;
     }
   }
-} 
-
+}
 
 void Util::processGramSchmidt(MatrixXf& mat){
   for (int i = 0; i < mat.cols(); ++i){
@@ -71,7 +70,7 @@ void Util::processGramSchmidt(MatrixXf& mat){
     if (norm < SVD_EPS){
       for (int k = i; k < mat.cols(); ++k){
 	      mat.col(k).setZero();
-      } 
+      }
       return;
     }
     mat.col(i) *= (1.f / norm);
@@ -100,5 +99,20 @@ void Util::convertFV2Mat(const vector<fv_t>& fvs, REDSVD::SMatrixXf& A){
   A.finalize();
 }
 
+vector<int> Util::ascending_order(VectorXf& values) {
+    vector<int> indices(values.size());
+    for (int i = 0; i != indices.size(); ++i) indices[i] = i;
+    AscentCompareIndicesByAnotherVectorValues comp(values);
+    sort(indices.begin(), indices.end(), comp);
+    return indices;
+}
+
+vector<int> Util::descending_order(VectorXf& values) {
+    vector<int> indices(values.size());
+    for (int i = 0; i != indices.size(); ++i) indices[i] = i;
+    DescentCompareIndicesByAnotherVectorValues comp(values);
+    sort(indices.begin(), indices.end(), comp);
+    return indices;
+}
 
 }

@@ -34,7 +34,7 @@ IF(NOT APPLE)
   ADD_DEFINITIONS(-march=native)
 ENDIF(NOT APPLE)
 
-# 
+#
 # Check for required libraries
 # FIND_PACKAGE( xxx REQUIRED ) : REQUIRED removed so that MESSAGE is written
 #
@@ -110,5 +110,3 @@ ENDIF(DOXYGEN_FOUND)
 
 ADD_SUBDIRECTORY(src)
 INCLUDE_DIRECTORIES(data)
-
-

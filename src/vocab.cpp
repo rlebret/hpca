@@ -36,22 +36,32 @@
 int verbose = true; // true or false
 int num_threads = 8; // pthreads
 char *c_input_file_name, *c_vocab_file_name;
-int max_vocab_size = 1000000;
 
 /**
  * Write out vocabulary file
  **/
-int writevocab(std::string output_file_name, Hashtable *hash){
+int writevocab(vocab *hash, std::string output_file_name){
 
     if (verbose) fprintf(stderr, "Writing vocabulary file in %s\n", output_file_name.c_str());
-
-    // sorting
-    hash->sort();
+    // get vocab full size
+    const int size = hash->size();
+    // sorting by value (descending order)
+    const entry_t *sorted_hash = hash_sort(hash);
 
     // writing
-    hash->print(output_file_name.c_str());
+    FILE * fout = fopen(output_file_name.c_str(), "wb");
+    if (fout == NULL){
+      std::string error_msg = std::string("Cannot open file ")
+                            + output_file_name
+                            + std::string(" !!!");
+      throw std::runtime_error(error_msg);
+    }
+    for (int i=0; i<size; i++)
+      fprintf(fout, "%s %d\n", sorted_hash[i].key, sorted_hash[i].value);
+    fclose(fout);
 
     if(verbose) fprintf(stderr,"Counted %ld unique words.\n", hash->size());
+    free((entry_t*)sorted_hash);
 
     return 0;
 }
@@ -79,7 +89,7 @@ void *getvocab( void *p ){
     }
 
     // create vocab
-    Hashtable hash(max_vocab_size,max_vocab_size*10);
+    vocab hash;
     // open input file
     std::string input_file_name = std::string(c_input_file_name);
     File input_file(input_file_name);
@@ -90,15 +100,12 @@ void *getvocab( void *p ){
     // read and store tokens
     char word[MAX_TOKEN];
     long int position=input_file.position();
-    int ht_idx,itr=0;
+    int itr=0;
     if (verbose) loadbar(thread->id(), itr, 100);
     while ( position<end ){
         // get next word
         while (input_file.getword(word)){
-            if ( (ht_idx = hash.get(word)) == -1 ){ // get hashing index
-                ht_idx = hash.insert(word); // new word to add
-            }
-            hash.increment(ht_idx); // increment counters
+            hash[word]++;
             ++ntokens;
         }
         // get current position in stream
@@ -118,13 +125,13 @@ void *getvocab( void *p ){
         // increment total number of tokens
         (*ptr_ntokens) += ntokens;
         // write hash table
-        hash.print(output_file_name.c_str());
+        hash_print(&hash, output_file_name.c_str());
         // existing pthread
         pthread_exit( (void*)thread->id() );
     }else{
         if (verbose) fprintf(stderr, "\ndone after reading %lld tokens.\n", ntokens);
         // write out
-        writevocab(output_file_name, &hash);
+        writevocab(&hash, output_file_name);
     }
     return 0;
 }
@@ -136,7 +143,7 @@ int merge(const int nthreads){
     // get output file name
     std::string output_file_name = std::string(c_vocab_file_name);
     // create vocab
-    Hashtable hash(max_vocab_size, max_vocab_size*10);
+    vocab hash;
 
     char token[MAX_TOKEN];
     int freq;
@@ -152,7 +159,8 @@ int merge(const int nthreads){
             throw std::runtime_error(error_msg);
         }
         while(fscanf(fp, "%s %d\n", token, &freq) != EOF){
-            hash.insert(token, freq);
+            //hash.insert(token, freq);
+            hash[token]+=freq;
         }
         fclose(fp);
         if( remove(temp_hash_file ) != 0 ){
@@ -163,7 +171,7 @@ int merge(const int nthreads){
         }
     }
     // write out
-    writevocab( output_file_name, &hash );
+    writevocab( &hash, output_file_name );
 
     return 0;
 }
@@ -215,8 +223,6 @@ int main(int argc, char **argv) {
         printf("\t\tOutput file to save the vocabulary\n");
         printf("\t-threads <int>\n");
         printf("\t\tNumber of threads; default 8\n");
-        printf("\t-max-size <int>\n");
-        printf("\t\tEstimation of the vocabulary size; default 100000\n");
         printf("\nExample usage:\n");
         printf("./vocab -input-file clean_data -vocab-file vocab.txt -nthread 8 -verbose 1\n\n");
         return 0;
@@ -235,7 +241,6 @@ int main(int argc, char **argv) {
     if ((i = find_arg((char *)"-input-file", argc, argv)) > 0) strcpy(c_input_file_name, argv[i + 1]);
     if ((i = find_arg((char *)"-vocab-file", argc, argv)) > 0) strcpy(c_vocab_file_name, argv[i + 1]);
     else strcpy(c_vocab_file_name, (char *)"vocab.txt");
-    if ((i = find_arg((char *)"-max-size", argc, argv)) > 0) max_vocab_size = atoi(argv[i + 1]);
 
     /* check whether input file exists */
     is_file(c_input_file_name);

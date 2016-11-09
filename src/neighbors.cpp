@@ -37,106 +37,25 @@
 // include redsvd headers
 #include "redsvd/util.h"
 
+// include i/o headers
+#include "io/eigen.h"
+#include "io/vocab.h"
+
 // define global variables
 int verbose=true;
 int num_threads=8;
 int top=10;
 char *c_word_file_name, *c_vocab_file_name, *c_list_file_name;
 // variable for handling vocab
-Hashtable * hash;
+vocab hash;
 char ** tokename;
 int vocab_size;
 
-
-class CompareIndicesByAnotherVectorValues{
-    Eigen::VectorXf& _values;
-    public:
-        CompareIndicesByAnotherVectorValues(Eigen::VectorXf& values) : _values(values) {}
-    public:
-        bool operator() (const int& a, const int& b) const { return (_values)[a] < (_values)[b]; }
-};
-
-
-std::vector<int> ordered(Eigen::VectorXf& values) {
-    std::vector<int> indices(values.size());
-    for (int i = 0; i != indices.size(); ++i) indices[i] = i;
-    CompareIndicesByAnotherVectorValues comp(values);
-    std::sort(indices.begin(), indices.end(), comp);
-    return indices;
-}
-
-
-// Read matrix from file
-void readMatrix(const char *filename, Eigen::MatrixXf& result)
-{
-    File matfile((std::string(filename)));
-    // get number of rows from file
-    const int rows = matfile.number_of_line();
-    /* check whether number of lines in words is equal to the number of words into vocab file */
-    if (rows != vocab_size){
-        throw std::runtime_error("Size mismatch between words and vocabulary files!!!\n");
-    }
-    // get number of rows from file
-    const int cols = matfile.number_of_column(' ');
-    if (verbose) fprintf(stderr, "words vector size = %d\n",cols);
-
-    // opening file
-    matfile.open();
-
-    // Populate matrix with numbers.
-    result.resize(rows,cols);
-    char *line=NULL;
-    char delim=' ';
-    for (int i = 0; i < rows; i++){
-        line = matfile.getline();
-        char *ptr = line;
-        char *olds = line;
-        char olddelim = delim;
-        int j=0;
-        while(olddelim && *line) {
-            while(*line && (delim != *line)) line++;
-            *line ^= olddelim = *line; // olddelim = *line; *line = 0;
-            result(i,j++) = atof(olds);
-            *line++ ^= olddelim; // *line = olddelim; line++;
-            olds = line;
-        }
-        free(ptr);
-    }
-    // closing file
-    matfile.close();
-};
-
-
-/* load vocabulary */
-void getvocab(){
-
-    File fp((std::string(c_vocab_file_name)));
-    vocab_size = fp.number_of_line();
-    // create vocab
-    hash = new Hashtable(vocab_size);
-    tokename = (char**) malloc(sizeof(char*)*vocab_size);
-    // open file
-    fp.open();
-    // get vocabulary
-    char * line = NULL;
-    int i=0;
-    while( (line=fp.getline()) != NULL) {
-        // store token name
-        tokename[i] = (char*)malloc(strlen(line)+1);
-        strcpy(tokename[i], line);
-        hash->insert(line, i++);
-        free(line);
-    }
-    // closing file
-    fp.close();
-    if (verbose) fprintf(stderr, "number of words in vocabulary = %d\n",vocab_size);
-}
-
+/* return word nearest neighbors in the embedding space */
 void getnn(FILE* fout, Eigen::MatrixXf m, const int idx){
-
     // find nearest neighbour
     Eigen::VectorXf dist = (m.rowwise() - m.row(idx)).rowwise().squaredNorm();
-    std::vector<int> sortidx = ordered(dist);
+    std::vector<int> sortidx = REDSVD::Util::ascending_order(dist);
     for (int i=1;i<top;i++){
         fprintf(fout, "%s, ", tokename[sortidx[i]]);
     }
@@ -145,8 +64,9 @@ void getnn(FILE* fout, Eigen::MatrixXf m, const int idx){
 
 
 int main(int argc, char **argv) {
-    int i;
+    int i, idx;
     int interact=false;
+    vocab::iterator vocab_itr;
 
     c_word_file_name = (char*)malloc(sizeof(char) * MAX_FULLPATH_NAME);
     c_list_file_name = (char*)malloc(sizeof(char) * MAX_FULLPATH_NAME);
@@ -201,13 +121,19 @@ int main(int argc, char **argv) {
     is_file(c_vocab_file_name);
 
     /* get vocabulary */
-    getvocab();
+    vocab_size = get_vocab(c_vocab_file_name, hash);
+    tokename = get_words(c_vocab_file_name, vocab_size);
+    if (verbose) fprintf(stderr, "number of words in vocabulary = %d\n",vocab_size);
 
     /* get words */
     Eigen::MatrixXf words;
-    readMatrix(c_word_file_name, words);
+    read_eigen_matrix(c_word_file_name, words);
+    /* check whether number of lines in words is equal to the number of words into vocab file */
+    if (words.rows() != vocab_size){
+        throw std::runtime_error("Size mismatch between words and vocabulary files!!!\n");
+    }
+    if (verbose) fprintf(stderr, "words vector size = %d\n",words.cols());
 
-    int idx;
     fprintf(stderr, "---------------------------------------\n");
     if (interact){
         /* initialize random seed: */
@@ -227,9 +153,11 @@ int main(int argc, char **argv) {
                     idx = rand() % vocab_size + 1;
                 }
                 else{
-                    if ( (idx = hash->value(w))==-1){
+                    if ( (vocab_itr = hash.find(w)) == hash.end() ){
                         fprintf(stderr, "unknown word, please enter a new one\n\n");
                         continue;
+                    }else{
+                        idx = vocab_itr->second;
                     }
                 }
                 fprintf(stderr, "computing nearest neighbors of %s...\n", tokename[idx]);
@@ -246,9 +174,9 @@ int main(int argc, char **argv) {
         char * line = NULL;
         int i=0;
         while( (line=fp.getline()) != NULL) {
-            if ( (idx = hash->value(line))!=-1){
+            if ( (vocab_itr = hash.find(line)) != hash.end() ){
                 fprintf(stdout, "%s --> ", line);
-                getnn(stdout, words, idx);
+                getnn(stdout, words, vocab_itr->second);
             }
         }
         fp.close();
@@ -259,7 +187,6 @@ int main(int argc, char **argv) {
     free(c_word_file_name);
     for (int i=0; i<vocab_size; i++) if (tokename[i]) free(tokename[i]);
     free(tokename);
-    delete hash;
 
     if (verbose){
         fprintf(stderr, "\ndone\n");

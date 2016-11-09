@@ -52,6 +52,15 @@ bool is_directory( const char * path );
 bool is_file(const char * path );
 
 /**
+ * 	@brief Return full path of a file
+ *
+ *  @param dir path to the directory
+ *  @param filename name of the file
+ *  @return a string containing the full path
+ */
+char* const get_full_path(const char *dir, const char *filename);
+
+/**
  *  @brief Accessor
  *
  *  Get the total of memory
@@ -179,4 +188,3 @@ void loadbar(long int const thread_id, unsigned int const x, unsigned int n, uns
 /** @} */
 
 #endif /*UTIL_H_*/
-
