@@ -59,7 +59,7 @@ int run() {
     read_eigen_truncated_matrix(c_input_file_V_name, V, dim);
     // read S matrix from file
     Eigen::VectorXf S;
-    read_eigen_vector(c_input_file_S_name, S, dim, 1.0-eigen);
+    read_eigen_vector(c_input_file_S_name, S, dim, 1.0-eig);
 
     // checking the dimensions
     if (V.rows() != ncontext){
